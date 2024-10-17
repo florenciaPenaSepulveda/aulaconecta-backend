@@ -1,0 +1,60 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type UserEntity {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  rut: String!
+  email: String!
+  role: UserRoles!
+}
+
+"""The roles a user can have in the system"""
+enum UserRoles {
+  Student
+  Teacher
+  Admin
+  Parents
+}
+
+type AuthResponse {
+  token: String!
+  message: String!
+  verificacion: Boolean!
+}
+
+type Query {
+  """Busca un usuario por RUT"""
+  findByRut(rut: String!): UserEntity!
+  getAllUser: [UserEntity!]!
+
+  """Obtiene todos los usuarios con rol de student"""
+  getAllStudents: [UserEntity!]!
+}
+
+type Mutation {
+  """Create a new user (either student or teacher)"""
+  createUser(createUserDto: CreateUserDto!): UserEntity!
+  removeUser(rut: String!): Boolean!
+
+  """Actualiza un usuario"""
+  updateUser(rut: String!, updateUserDto: UpdateUserDto!): UserEntity!
+  login(email: String!, password: String!): AuthResponse!
+}
+
+input CreateUserDto {
+  firstName: String!
+  lastName: String!
+  rut: String!
+  email: String!
+  role: UserRoles!
+  password: String
+}
+
+input UpdateUserDto {
+  firstName: String
+  lastName: String
+  email: String
+}
