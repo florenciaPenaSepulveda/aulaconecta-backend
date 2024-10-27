@@ -8,8 +8,8 @@ export class MailService {
   constructor() {
     this.transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
+      port: 465,
+      secure: true,
       auth: {
         user: 'flopi2801@gmail.com',
         pass: 'vjwa owqk pwuh qodb', // Considera usar un "App Password"
