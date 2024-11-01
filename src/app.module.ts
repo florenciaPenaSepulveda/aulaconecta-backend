@@ -3,12 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { GraphQLModule } from '@nestjs/graphql';
-import {
-  ApolloFederationDriver,
-  ApolloFederationDriverConfig,
-} from '@nestjs/apollo';
+import {ApolloFederationDriver, ApolloFederationDriverConfig, ApolloDriver, ApolloDriverConfig} from '@nestjs/apollo';
 import { join } from 'path';
-import { GraphQLSchema } from 'graphql';
 
 @Module({
   imports: [
@@ -24,8 +20,8 @@ import { GraphQLSchema } from 'graphql';
       autoLoadEntities: true,
       synchronize: true,
     }),
-    GraphQLModule.forRoot<ApolloFederationDriverConfig>({
-      driver:ApolloFederationDriver,
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver:ApolloDriver,
       autoSchemaFile: {
         path: join(process.cwd(), 'src', 'graphql', 'schema.gql'),
         federation: 2,

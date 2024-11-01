@@ -9,7 +9,6 @@ type UserEntity {
   rut: String!
   email: String!
   role: UserRoles!
-  password: String!
 }
 
 """The roles a user can have in the system"""
@@ -24,8 +23,10 @@ type AuthResponse {
   token: String!
   message: String!
   verificacion: Boolean!
-  email: String!
+  role: String!
+  firstName: String!
   id: Float!
+  isChangePassword: Boolean!
 }
 
 type Query {
@@ -44,14 +45,10 @@ type Mutation {
 
   """Actualiza un usuario"""
   updateUser(rut: String!, updateUserDto: UpdateUserDto!): UserEntity!
-  register(registerDto: RegisterDto!): AuthResponse!
   login(email: String!, password: String!): AuthResponse!
-
-  """Solicita un enlace para restablecer la contraseña"""
-  forgotPassword(forgotPassDto: ForgotPassDto!): String!
-
-  """Restablece la contraseña utilizando un token"""
-  resetPassword(resetPasswordDto: ResetPasswordDto!): String!
+  forgotPass(email: String!): AuthResponse!
+  register(firstName: String!, lastName: String!, rut: String!, email: String!, password: String!, role: String!): AuthResponse!
+  changePassword(newPassword: String!): AuthResponse!
 }
 
 input CreateUserDto {
@@ -60,28 +57,11 @@ input CreateUserDto {
   rut: String!
   email: String!
   role: UserRoles!
-  password: String!
+  password: String
 }
 
 input UpdateUserDto {
   firstName: String
   lastName: String
   email: String
-}
-
-input RegisterDto {
-  firstName: String!
-  lastName: String!
-  email: String!
-  password: String!
-  rut: String!
-}
-
-input ForgotPassDto {
-  email: String!
-}
-
-input ResetPasswordDto {
-  token: String!
-  newPassword: String!
 }

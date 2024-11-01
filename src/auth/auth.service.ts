@@ -1,79 +1,89 @@
-//Nest
-import { Injectable, UnauthorizedException,  BadRequestException } from "@nestjs/common";
+// Nest
+import { Injectable, UnauthorizedException, BadRequestException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-//JWT
+// JWT
 import { JwtService } from "@nestjs/jwt";
-//import { jwtConstants } from "./constant/jwt.constants";
-//Entity
+// Entity
 import { AuthEntity } from "./entity/auth.entity";
-//Service
+// Service
 import { UserService } from "src/user/user.service";
-//DTO
+// DTOs
 import { LoginDto } from "./dto/login.dto";
 import { ForgotPassDto } from "./dto/forgotpass.dto";
 import { RegisterDto } from "./dto/register.dto";
-//Herramientas
+// Herramientas
 import * as bcryptjs from "bcryptjs";
 import * as nodemailer from 'nodemailer';
 import { randomBytes } from 'crypto';
-//Respuesta
+// Respuesta
 import { AuthResponse } from "./entity/authresponse.entity";
-//Enums
+// Enums
 import { UserRoles } from "src/user/enums/user-roles.enums";
 import { ChangePasswordDto } from "./dto/change-password";
 
 @Injectable()
-export class AuthService{
+export class AuthService {
 
     constructor(
         private readonly userService: UserService,
         private readonly jwtService: JwtService,
         @InjectRepository(AuthEntity)
-        private readonly authRepository : Repository<AuthEntity>,
+        private readonly authRepository: Repository<AuthEntity>,
     ) {}
 
-    async login({ email, password }: LoginDto){
+    // Método de inicio de sesión
+    async login({ email, password }: LoginDto) {
+        // Busca al usuario por su email
         const user = await this.userService.findOneByEmail(email);
 
-        if(!user){
-            throw new UnauthorizedException("Email no valido");
+        // Si el usuario no existe, lanza una excepción de no autorizado
+        if (!user) {
+            throw new UnauthorizedException("Email no válido");
         }
 
-        const auth = await this.authRepository.findOne({where: {idUser: user.id}});
+        // Busca las credenciales de autenticación del usuario en el repositorio
+        const auth = await this.authRepository.findOne({ where: { idUser: user.id } });
         if (!auth) {
             throw new UnauthorizedException("Usuario sin credenciales de autenticación");
         }
 
+        // Verifica si la contraseña proporcionada es válida
         const isPasswordValid = await bcryptjs.compare(password, auth.password);
         if (!isPasswordValid) {
             throw new UnauthorizedException("Contraseña o email no válido");
         }
 
-        const payload = { id: user.id};
+        // Genera el token JWT con el ID del usuario
+        const payload = { id: user.id };
         const token = await this.jwtService.signAsync(payload);
 
+        // Devuelve el token y la información del usuario
         return {
-            message: "Inicio de sesion exitoso",
+            message: "Inicio de sesión exitoso",
             token,
-            role:user.role,
+            role: user.role,
             firstName: user.firstName,
             id: user.id
-        } as AuthResponse
+        } as AuthResponse;
     }
 
-    async register({ password, email, firstName, lastName, role, rut}: RegisterDto) {
+    // Método de registro de usuario
+    async register({ password, email, firstName, lastName, role, rut }: RegisterDto) {
 
+        // Verifica que el rol sea Teacher o Parents, de lo contrario lanza una excepción
         if (role !== UserRoles.Teacher && role !== UserRoles.Parents) {
             throw new BadRequestException('Solo profesores y padres pueden registrarse a través de esta función.');
         }
 
+        // Comprueba si el email ya está registrado
         const user = await this.userService.findOneByEmail(email);
 
         if (user) {
             throw new BadRequestException("El email ya se encuentra registrado");
         }
 
+        // Agrega el nuevo usuario
         await this.userService.addNewUser({
             firstName,
             lastName,
@@ -81,35 +91,45 @@ export class AuthService{
             email,
             password,
             role
-        }); 
+        });
 
+        // Devuelve un mensaje de éxito
         return {
-            message: "Usuario creado con exito",
-        }as AuthResponse;
+            message: "Usuario creado con éxito",
+        } as AuthResponse;
     }
 
-    async forgotpass({email}: ForgotPassDto){
+    // Método de recuperación de contraseña
+    async forgotpass({ email }: ForgotPassDto) {
+        // Busca al usuario por su email
         const user = await this.userService.findOneByEmail(email);
 
+        // Si el usuario no existe, lanza una excepción de no autorizado
         if (!user) { 
-            throw new UnauthorizedException("Email no valido");
-            }
+            throw new UnauthorizedException("Email no válido");
+        }
+
+        // Genera una nueva contraseña aleatoria
         const newPass = randomBytes(8).toString('hex');
         const hashedNewPass = await bcryptjs.hash(newPass, 10);
 
+        // Busca las credenciales de autenticación del usuario
         const auth = await this.findByIdAuth(user.id);
 
+        // Actualiza la contraseña en la base de datos y envía un correo con la nueva contraseña
         await this.userService.updatePassword(auth.id, hashedNewPass);
         await this.sendPasswordResetEmail(email, newPass);
-        
+
+        // Devuelve un mensaje de éxito
         return {
             message: "Contraseña reseteada. Verifica tu email"
         } as AuthResponse;
-        
     }
 
+    // Método que envía un correo electrónico con la nueva contraseña
     async sendPasswordResetEmail(email: string, newPassword: string) {
 
+        // Configura el transportador de correo usando Gmail
         let transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
@@ -118,6 +138,7 @@ export class AuthService{
             }
         });
 
+        // Define las opciones del correo electrónico
         const mailOptions = {
             from: '"MarcApp" <marcapp.service@gmail.com>',
             to: email,
@@ -143,20 +164,27 @@ export class AuthService{
                 </html>
             `
         };
+        // Envía el correo electrónico
         await transporter.sendMail(mailOptions);
     }
 
-    async findByIdAuth(userId: number){
-        return await this.authRepository.findOneBy({idUser: userId});
+    // Busca credenciales de autenticación por el ID de usuario
+    async findByIdAuth(userId: number) {
+        return await this.authRepository.findOneBy({ idUser: userId });
     }
 
-    async changePassword(token, {newPassword}: ChangePasswordDto){
+    // Método para cambiar la contraseña del usuario autenticado
+    async changePassword(token, { newPassword }: ChangePasswordDto) {
 
+        // Busca las credenciales de autenticación por el ID del token
         const auth = await this.findByIdAuth(token.id);
+        // Hashea la nueva contraseña
         const hashedNewPass = await bcryptjs.hash(newPassword, 10);
 
+        // Actualiza la contraseña en la base de datos
         await this.userService.updatePassword(auth.id, hashedNewPass);
 
+        // Devuelve un mensaje de éxito
         return {
             message: "Contraseña reseteada correctamente"
         } as AuthResponse;

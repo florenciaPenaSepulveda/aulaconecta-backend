@@ -19,4 +19,7 @@ export class AuthResponse {
 
     @Field()
     id: number;
+
+    @Field()
+    isChangePassword: boolean;
 }
