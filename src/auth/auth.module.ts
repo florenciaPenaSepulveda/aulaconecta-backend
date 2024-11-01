@@ -6,21 +6,19 @@ import { AuthService } from "./auth.service";
 import { AuthResolver } from "./auth.resolver";
 import { AuthEntity } from "./entity/auth.entity";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { MailModule } from "src/mail/mail.module"; // Importamos el MailModule
 
 @Module({
     imports: [
         UserModule,
         TypeOrmModule.forFeature([AuthEntity]),
         JwtModule.register({
-            global: true,
-            secret: jwtConstants.secret,
-            signOptions: {
-                expiresIn: '8000s',
-            },
+        global: true,
+        secret: jwtConstants.secret,
+        signOptions:{
+            expiresIn:'8000s'
+        },
         }),
-        MailModule, // Agregamos el MailModule
     ],
-    providers: [AuthService, AuthResolver],
+    providers: [AuthService,AuthResolver],
 })
 export class AuthModule {}

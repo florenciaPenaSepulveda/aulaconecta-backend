@@ -6,14 +6,17 @@ export class AuthResponse {
     token: string;
 
     @Field()
-    message: string;
+    message :string;
 
     @Field()
-    verificacion: boolean;
+    verificacion:boolean;
 
-    @Field() // Asegúrate de que este campo se llame como lo necesitas en la mutación
-    email: string;
+    @Field()
+    role : string;
 
-    @Field() // Si necesitas el ID del usuario, añade este campo
+    @Field()
+    firstName: string;
+
+    @Field()
     id: number;
 }

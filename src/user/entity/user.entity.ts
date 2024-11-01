@@ -32,8 +32,4 @@ export class UserEntity {
     })
     @Field(() => UserRoles)
     role: UserRoles;
-
-    @Column()
-    @Field()
-    password: string; // Asegúrate de tener este campo
 }

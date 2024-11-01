@@ -1,30 +1,26 @@
-import { IsString, IsEmail, IsEnum } from 'class-validator';
-import { InputType, Field } from '@nestjs/graphql';
-import { UserRoles } from '../enums/user-roles.enums';
+import { UserRoles } from "../enums/user-roles.enums";
+import { InputType, Field} from '@nestjs/graphql';
+import { IsOptional, IsString } from 'class-validator';
 
 @InputType()
-export class CreateUserDto {
+export class CreateUserDto{
     @Field()
-    @IsString()
-    firstName: string;
+    firstName : string;
 
     @Field()
-    @IsString()
-    lastName: string;
+    lastName : string;
 
     @Field()
-    @IsString()
-    rut: string;
+    rut : string;
 
     @Field()
-    @IsEmail()
-    email: string;
+    email : string;
 
     @Field(() => UserRoles)
-    @IsEnum(UserRoles)
     role: UserRoles;
 
-    @Field()
+    @Field({ nullable: true })
+    @IsOptional()
     @IsString()
-    password: string;
+    password?: string;
 }

@@ -1,9 +1,11 @@
-import { IsEmail } from "class-validator";
-import { ArgsType, Field, InputType } from "@nestjs/graphql"; // Asegúrate de importar InputType
+import { IsEmail} from "class-validator";
+import { ArgsType, Field } from "@nestjs/graphql";
 
-@InputType() // Añadir el decorador InputType
-export class ForgotPassDto {
+@ArgsType()
+export class ForgotPassDto{
+
     @Field()
     @IsEmail()
-    email: string; // Esta propiedad debe estar presente
+    email: string;
+
 }
