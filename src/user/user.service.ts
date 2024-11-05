@@ -153,4 +153,8 @@ export class UserService {
         // Actualiza la contraseña del usuario en el repositorio de autenticación
         await this.authRepository.update(id, { password: newPassword });
     }
+
+    async updateChangePass(id: number, newIsChangePass: boolean): Promise<void>{
+        await this.authRepository.update(id, {isChangePass: newIsChangePass});
+    }
 }

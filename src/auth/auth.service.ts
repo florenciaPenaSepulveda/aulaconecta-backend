@@ -64,7 +64,8 @@ export class AuthService {
             token,
             role: user.role,
             firstName: user.firstName,
-            id: user.id
+            id: user.id,
+            isChangePassword: auth.isChangePass
         } as AuthResponse;
     }
 
@@ -119,6 +120,7 @@ export class AuthService {
         // Actualiza la contraseña en la base de datos y envía un correo con la nueva contraseña
         await this.userService.updatePassword(auth.id, hashedNewPass);
         await this.sendPasswordResetEmail(email, newPass);
+        await this.userService.updateChangePass(auth.id, true);
 
         // Devuelve un mensaje de éxito
         return {
@@ -183,6 +185,9 @@ export class AuthService {
 
         // Actualiza la contraseña en la base de datos
         await this.userService.updatePassword(auth.id, hashedNewPass);
+
+        //Actualiza el estado de isChangePass
+        await this.userService.updateChangePass(auth.id, false);
 
         // Devuelve un mensaje de éxito
         return {

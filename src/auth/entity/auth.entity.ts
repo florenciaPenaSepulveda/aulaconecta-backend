@@ -13,4 +13,7 @@ export class AuthEntity{
 
     @Column()
     password:string;
+
+    @Column({default:false})
+    isChangePass: boolean
 }

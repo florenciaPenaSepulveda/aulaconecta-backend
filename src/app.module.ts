@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { GraphQLModule } from '@nestjs/graphql';
-import {ApolloFederationDriver, ApolloFederationDriverConfig, ApolloDriver, ApolloDriverConfig} from '@nestjs/apollo';
+import { ApolloDriver, ApolloDriverConfig} from '@nestjs/apollo';
 import { join } from 'path';
 
 @Module({
