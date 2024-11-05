@@ -1,4 +1,4 @@
-import { Resolver, Args, Mutation, Query, Context } from "@nestjs/graphql";
+import { Resolver, Args, Mutation, Context } from "@nestjs/graphql";
 
 import { LoginDto } from "./dto/login.dto";
 import { ForgotPassDto } from "./dto/forgotpass.dto";

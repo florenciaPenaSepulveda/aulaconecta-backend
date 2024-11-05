@@ -8,4 +8,6 @@ export class CreateSubjectDto {
 
     @Field(() => Int, { nullable: true })
     numberOfClasses: number;
+    
+    idTeacher: number
 }

@@ -4,6 +4,9 @@ import { Repository } from "typeorm";
 import { SubjectEntity } from "./entities/subject.entity";
 import { CreateSubjectDto } from "./dto/createSubject.dto";
 import { UpdateSubjectDto } from "./dto/updateSubject.dto";
+import { SubjectResponse } from "./entities/subjectResponse";
+import { jwtConstants } from "src/auth/constant/jwt.constants";
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class SubjectService{
@@ -13,8 +16,23 @@ export class SubjectService{
         private readonly subjectRepository : Repository<SubjectEntity>
     ){}
 
-    async addNewSubject(createSubjectDto: CreateSubjectDto){
-        return await this.subjectRepository.save(createSubjectDto);
+    async addNewSubject(createSubjectDto: CreateSubjectDto, token:string): Promise<SubjectResponse>{
+        let userData:any;
+        userData = jwt.verify(token, jwtConstants.secret);
+
+        createSubjectDto.idTeacher = userData.id;
+
+        try {
+            await this.subjectRepository.save(createSubjectDto);
+                return {
+                    isCreateSubject:true
+                }as SubjectResponse
+        } catch (error) {
+            console.log(error)
+        }
+        return {
+            isCreateSubject: false
+        }as SubjectResponse
     }
 
     async deleteSubject(name :string) : Promise<boolean>{

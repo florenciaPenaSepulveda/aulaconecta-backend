@@ -16,4 +16,8 @@ export class SubjectEntity{
     @Column()
     @Field()
     numberOfClasses: number;
+
+    @Column()
+    @Field()
+    idTeacher : number;
 }

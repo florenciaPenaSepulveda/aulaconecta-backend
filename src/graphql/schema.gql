@@ -29,6 +29,24 @@ type AuthResponse {
   isChangePassword: Boolean!
 }
 
+"""La entidad Subject que representa una asignatura"""
+type SubjectEntity {
+  id: ID!
+  name: String!
+  numberOfClasses: Float!
+  idTeacher: Float!
+}
+
+type SubjectResponse {
+  isCreateSubject: Boolean!
+}
+
+type UserWithAttendanceDto {
+  user: UserEntity!
+  totalAsist: Float!
+  totalAbsences: Float!
+}
+
 type Query {
   """Busca un usuario por RUT"""
   findByRut(rut: String!): UserEntity!
@@ -36,6 +54,10 @@ type Query {
 
   """Obtiene todos los usuarios con rol de student"""
   getAllStudents: [UserEntity!]!
+
+  """Obtiene los usuarios y su asistencia por asignatura"""
+  listUsersBySubject(idSubject: Float!): [UserWithAttendanceDto!]!
+  listSubject: [SubjectEntity!]!
 }
 
 type Mutation {
@@ -49,6 +71,24 @@ type Mutation {
   forgotPass(email: String!): AuthResponse!
   register(firstName: String!, lastName: String!, rut: String!, email: String!, password: String!, role: String!): AuthResponse!
   changePassword(newPassword: String!): AuthResponse!
+
+  """Marca la asistencia de los estudiantes"""
+  takeAsist(createAsistInput: CreateAsistDto!): Boolean!
+
+  """Create a new subject by providing the name and number of classes."""
+  createSubject(
+    """
+    The input data for creating a new subject, including name and number of classes.
+    """
+    createSubjectInput: CreateSubjectDto!
+  ): SubjectResponse!
+
+  """Remove a subject by its name. Returns true if deletion is successful."""
+  removeSubject(
+    """The name of the subject to delete."""
+    name: String!
+  ): Boolean!
+  updateSubject(createSubjectInput: UpdateSubjectDto!): Boolean!
 }
 
 input CreateUserDto {
@@ -64,4 +104,25 @@ input UpdateUserDto {
   firstName: String
   lastName: String
   email: String
+}
+
+input CreateAsistDto {
+  asistencias: [CreateAsistItemDto!]!
+}
+
+input CreateAsistItemDto {
+  idUser: Float!
+  idSubject: Float!
+  asist: Float!
+}
+
+input CreateSubjectDto {
+  name: String!
+  numberOfClasses: Int
+}
+
+input UpdateSubjectDto {
+  name: String!
+  newName: String
+  numberOfClasses: Int
 }

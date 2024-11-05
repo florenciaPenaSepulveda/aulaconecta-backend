@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
+import { SubjectModule } from './subject/subject.module';
+import { AsistModule } from './asist/asist.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig} from '@nestjs/apollo';
 import { join } from 'path';
@@ -10,6 +12,8 @@ import { join } from 'path';
   imports: [
     UserModule,
     AuthModule,
+    AsistModule,
+    SubjectModule,
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: 'localhost',
