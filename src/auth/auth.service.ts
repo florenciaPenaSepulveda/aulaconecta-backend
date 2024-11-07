@@ -4,6 +4,8 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 // JWT
 import { JwtService } from "@nestjs/jwt";
+import * as jwt from 'jsonwebtoken';
+import { jwtConstants } from "./constant/jwt.constants";
 // Entity
 import { AuthEntity } from "./entity/auth.entity";
 // Service
@@ -119,8 +121,9 @@ export class AuthService {
 
         // Actualiza la contraseña en la base de datos y envía un correo con la nueva contraseña
         await this.userService.updatePassword(auth.id, hashedNewPass);
-        await this.sendPasswordResetEmail(email, newPass);
         await this.userService.updateChangePass(auth.id, true);
+        await this.sendPasswordResetEmail(email, newPass);
+        
 
         // Devuelve un mensaje de éxito
         return {
@@ -178,8 +181,10 @@ export class AuthService {
     // Método para cambiar la contraseña del usuario autenticado
     async changePassword(token, { newPassword }: ChangePasswordDto) {
 
+        let datosUsuario: any;
+        datosUsuario = jwt.verify(token, jwtConstants.secret );
         // Busca las credenciales de autenticación por el ID del token
-        const auth = await this.findByIdAuth(token.id);
+        const auth = await this.findByIdAuth(datosUsuario.id);
         // Hashea la nueva contraseña
         const hashedNewPass = await bcryptjs.hash(newPassword, 10);
 
