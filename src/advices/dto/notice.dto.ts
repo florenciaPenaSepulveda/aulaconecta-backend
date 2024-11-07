@@ -1,7 +1,7 @@
 import { ArgsType, Field } from "@nestjs/graphql";
 
 @ArgsType()
-export class NotificationDto {
+export class NoticeDto {
 
     @Field()
     title: string;
@@ -9,6 +9,6 @@ export class NotificationDto {
     @Field()
     description: string;
 
-    @Field()
-    imageUrl: string;
+    @Field({ nullable: true })
+    imageUrl?: string;
 }

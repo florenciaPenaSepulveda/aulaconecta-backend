@@ -14,6 +14,6 @@ export class NoticeEntity{
     @Column()
     description: string;
 
-    @Column()
-    imageUrl: string;
+    @Column({ nullable: true })
+    imageUrl?: string;
 }
