@@ -47,7 +47,20 @@ type UserWithAttendanceDto {
   totalAbsences: Float!
 }
 
+type NoticeEntity {
+  id: Float!
+  title: String!
+  description: String!
+  imageUrl: String!
+}
+
+type NoticeResponse {
+  isCreateNotice: Boolean!
+}
+
 type Query {
+  getAllNotices: [NoticeEntity!]!
+
   """Busca un usuario por RUT"""
   findByRut(rut: String!): UserEntity!
   getAllUser: [UserEntity!]!
@@ -61,6 +74,8 @@ type Query {
 }
 
 type Mutation {
+  createNotice(title: String!, description: String!, imageUrl: String): NoticeResponse!
+
   """Create a new user (either student or teacher)"""
   createUser(createUserDto: CreateUserDto!): UserEntity!
   removeUser(rut: String!): Boolean!

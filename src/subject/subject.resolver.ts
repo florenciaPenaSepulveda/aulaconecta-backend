@@ -15,7 +15,6 @@ export class SubjectResolver{
     @UseGuards(Guard)
     @Mutation(() => SubjectResponse, { description: 'Create a new subject by providing the name and number of classes.'})
     async createSubject(@Context() context: any,@Args('createSubjectInput', {description: 'The input data for creating a new subject, including name and number of classes.'}) createSubjectDto: CreateSubjectDto): Promise<SubjectResponse> {
-        
         const req = context.req;
         return this.subjectService.addNewSubject(createSubjectDto, this.extractTokenFromHeader(req));
     }

@@ -4,16 +4,19 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { SubjectModule } from './subject/subject.module';
 import { AsistModule } from './asist/asist.module';
+import { AdvicesModule } from './advices/advices.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig} from '@nestjs/apollo';
 import { join } from 'path';
 
 @Module({
   imports: [
+    AdvicesModule,
     UserModule,
     AuthModule,
     AsistModule,
     SubjectModule,
+    
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: 'localhost',
@@ -28,10 +31,8 @@ import { join } from 'path';
       driver:ApolloDriver,
       autoSchemaFile: {
         path: join(process.cwd(), 'src', 'graphql', 'schema.gql'),
-        federation: 2,
       },
       playground: true,
-      introspection: true,
       context: ({ req }) => ({ req }),
     }),
   ],
