@@ -8,6 +8,7 @@ import { AdvicesModule } from './advices/advices.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig} from '@nestjs/apollo';
 import { join } from 'path';
+import { GradesModule } from './grades/grades.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { join } from 'path';
     AuthModule,
     AsistModule,
     SubjectModule,
+    GradesModule,
     
     TypeOrmModule.forRoot({
       type: 'mysql',

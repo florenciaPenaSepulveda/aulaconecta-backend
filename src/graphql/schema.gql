@@ -58,6 +58,22 @@ type NoticeResponse {
   isCreateNotice: Boolean!
 }
 
+"""
+La entidad Grade que representa una calificación de un estudiante en una asignatura
+"""
+type GradeEntity {
+  id: ID!
+
+  """La nota obtenida"""
+  grade: Float!
+
+  """ID del estudiante"""
+  studentId: Float!
+
+  """ID de la asignatura"""
+  subjectId: Float!
+}
+
 type Query {
   getAllNotices: [NoticeEntity!]!
 
@@ -71,6 +87,10 @@ type Query {
   """Obtiene los usuarios y su asistencia por asignatura"""
   listUsersBySubject(idSubject: Float!): [UserWithAttendanceDto!]!
   listSubject: [SubjectEntity!]!
+  gradesByStudentId(studentId: Float!): [GradeEntity!]!
+  gradesBySubjectId(subjectId: Float!): [GradeEntity!]!
+  findGradeById(id: Float!): GradeEntity!
+  getAllGrades: [GradeEntity!]!
 }
 
 type Mutation {
@@ -104,6 +124,9 @@ type Mutation {
     name: String!
   ): Boolean!
   updateSubject(createSubjectInput: UpdateSubjectDto!): Boolean!
+  createGrade(createGradeDto: CreateGradeDto!): GradeEntity!
+  updateGrade(id: Float!, updateGradeDto: UpdateGradeDto!): GradeEntity!
+  deleteGrade(id: Float!): Boolean!
 }
 
 input CreateUserDto {
@@ -140,4 +163,16 @@ input UpdateSubjectDto {
   name: String!
   newName: String
   numberOfClasses: Int
+}
+
+input CreateGradeDto {
+  grade: Float!
+  studentId: Float!
+  subjectId: Float!
+}
+
+input UpdateGradeDto {
+  grade: Float
+  studentId: Float
+  subjectId: Float
 }
