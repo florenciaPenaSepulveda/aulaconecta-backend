@@ -59,6 +59,35 @@ export class GradesService {
   async getAllGrades(): Promise<GradeEntity[]> {
     return await this.gradeRepository.find(); // Devuelve todas las calificaciones
   }
+
+  // Nueva función para obtener todas las notas de un alumno en un subject específico
+  async findGradesByStudentAndSubject(
+    studentId: number,
+    subjectId: number,
+  ): Promise<GradeEntity[]> {
+    return await this.gradeRepository.find({
+      where: { studentId, subjectId },
+    });
+  }
+
+  // Nueva función para calcular el promedio de un alumno en una asignatura específica
+  async calculateAverageGradeForStudentInSubject(
+    studentId: number,
+    subjectId: number,
+  ): Promise<number> {
+    const grades = await this.gradeRepository.find({
+      where: { studentId, subjectId },
+    });
+
+    if (grades.length === 0) {
+      return 0; // o puedes lanzar un error si no hay notas para ese estudiante y asignatura
+    }
+
+    const total = grades.reduce((sum, grade) => sum + grade.grade, 0);
+    const average = total / grades.length;
+
+    return average;
+  }
   
 
 }

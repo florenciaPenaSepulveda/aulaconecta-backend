@@ -1,4 +1,4 @@
-import { Resolver, Mutation, Args, Query } from '@nestjs/graphql';
+import { Resolver, Mutation, Args, Query, Float } from '@nestjs/graphql';
 import { GradesService } from './grades.service';
 import { GradeEntity } from './entities/grade.entity';
 import { CreateGradeDto } from './dto/createGrade.dto';
@@ -55,5 +55,23 @@ export class GradesResolver {
     return await this.gradesService.getAllGrades(); // Llamada al servicio para obtener todas las calificaciones
   }
 
+  // Nueva query para obtener notas de un alumno en una asignatura específica
+  @Query(() => [GradeEntity], { name: 'gradesByStudentAndSubject' })
+  async gradesByStudentAndSubject(
+    @Args('studentId') studentId: number,
+    @Args('subjectId') subjectId: number,
+  ): Promise<GradeEntity[]> {
+    return await this.gradesService.findGradesByStudentAndSubject(studentId, subjectId);
+  }
+
+
+  // Nueva query para obtener el promedio de un alumno en una asignatura específica
+  @Query(() => Float, { name: 'averageGradeByStudentAndSubject' })
+  async averageGradeByStudentAndSubject(
+    @Args('studentId') studentId: number,
+    @Args('subjectId') subjectId: number,
+  ): Promise<number> {
+    return await this.gradesService.calculateAverageGradeForStudentInSubject(studentId, subjectId);
+  }
 }
 
