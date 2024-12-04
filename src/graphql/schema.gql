@@ -51,7 +51,7 @@ type NoticeEntity {
   id: Float!
   title: String!
   description: String!
-  imageUrl: String!
+  imageUrl: String
 }
 
 type NoticeResponse {
