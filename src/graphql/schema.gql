@@ -91,6 +91,8 @@ type Query {
   gradesBySubjectId(subjectId: Float!): [GradeEntity!]!
   findGradeById(id: Float!): GradeEntity!
   getAllGrades: [GradeEntity!]!
+  gradesByStudentAndSubject(studentId: Float!, subjectId: Float!): [GradeEntity!]!
+  averageGradeByStudentAndSubject(studentId: Float!, subjectId: Float!): Float!
 }
 
 type Mutation {
@@ -152,6 +154,7 @@ input CreateAsistItemDto {
   idUser: Float!
   idSubject: Float!
   asist: Float!
+  absences: Float!
 }
 
 input CreateSubjectDto {
