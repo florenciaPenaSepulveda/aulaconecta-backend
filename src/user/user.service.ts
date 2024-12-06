@@ -66,6 +66,14 @@ export class UserService {
             throw new BadRequestException('Usuario no encontrado');
         }
         await this.userRepository.remove(user);
+
+        const authEntry = await this.authRepository.findOne({where:{ idUser: user.id }});
+
+        if (!authEntry) {
+            throw new BadRequestException ("Llame a soporte, se viene serio mi chamo!");
+        }
+        await this.authRepository.remove(authEntry);
+
         return true;
     }
 
