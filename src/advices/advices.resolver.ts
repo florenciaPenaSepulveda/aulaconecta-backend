@@ -14,7 +14,8 @@ export class AdvicesResolver {
     }
 
     @Query(() => [NoticeEntity])
-    async getAllNotices(): Promise<NoticeEntity[]> {
+        async getAllNotices(): Promise<NoticeEntity[]> {
+        console.log("getAllNotices resolver llamado");
         return this.advicesService.getAllNotices();
-    }
+        }
 }

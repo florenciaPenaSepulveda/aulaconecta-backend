@@ -21,24 +21,35 @@ export class AsistService{
         const updatedAsistEntities: AsistEntity[] = [];
     
         for (const asistencia of asistencias) {
-            const { idUser, idSubject, asist } = asistencia;
-        
-        let existingAsist = await this.asistRepository.findOne({
-            where: { idUser, idSubject },
-        });
+            const { idUser, idSubject, asist, absences } = asistencia;
     
-        if (existingAsist) {
-            if (asist === 1) {
-                existingAsist.asist += 1;
+            
+            let existingAsist = await this.asistRepository.findOne({
+                where: { idUser, idSubject },
+            });
+    
+            if (existingAsist) {
+                if (asist === 1) {
+                    existingAsist.asist += 1;
+                }
+                if (absences === 1) {
+                    existingAsist.absences += 1;
+                }
+    
+                updatedAsistEntities.push(await this.asistRepository.save(existingAsist));
+            } else {
+                const newAsist = this.asistRepository.create({
+                    idUser,
+                    idSubject,
+                    asist,
+                    absences,
+                });
+                updatedAsistEntities.push(await this.asistRepository.save(newAsist));
             }
-            updatedAsistEntities.push(await this.asistRepository.save(existingAsist));
-        } else {
-            const newAsist = this.asistRepository.create(asistencia);
-            updatedAsistEntities.push(await this.asistRepository.save(newAsist));
-        }
         }
         return updatedAsistEntities;
     }
+    
 
     async listUsersBySubject(idSubject: number): Promise<UserWithAttendanceDto[]> {
         const asistencias = await this.asistRepository.find({
@@ -50,25 +61,26 @@ export class AsistService{
         }
     
         const userIds = asistencias.map(asistencia => asistencia.idUser);
-        
+    
         const userWithAttendance: UserWithAttendanceDto[] = await Promise.all(
             userIds.map(async (idUser) => {
-            const user = await this.userService.findUserById(idUser); 
+                const user = await this.userService.findUserById(idUser);
     
-            const userAsistencias = asistencias.filter(asistencia => asistencia.idUser === idUser);
-            
-            const totalAsist = userAsistencias.reduce((sum, asist) => sum + asist.asist, 0);
-            const totalAbsences = userAsistencias.reduce((sum, asist) => sum + asist.absences, 0);
+                const userAsistencias = asistencias.filter(asistencia => asistencia.idUser === idUser);
     
-            return {
-                user,
-                totalAsist,
-                totalAbsences,
-            };
+                const totalAsist = userAsistencias.reduce((sum, asist) => sum + asist.asist, 0);
+                const totalAbsences = userAsistencias.reduce((sum, asist) => sum + asist.absences, 0);
+    
+                return {
+                    user,
+                    totalAsist,
+                    totalAbsences,
+                };
             })
         );
     
         return userWithAttendance;
     }
+    
 
 }
