@@ -9,7 +9,7 @@ export class SemesterEntity{
     @Field(()=> ID)
     id: number;
 
-    @Column()
+    @Column({unique: true})
     @Field()
     nameSemester : string;
 
