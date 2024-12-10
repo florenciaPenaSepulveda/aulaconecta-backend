@@ -5,6 +5,7 @@ import { DeleteSemesterDto } from './dto/deleteSemester.dto';
 import { SemesterService } from './semester.service';
 
 
+
 @Resolver()
 export class SemesterResolver{
     constructor (private readonly semesterService: SemesterService){}

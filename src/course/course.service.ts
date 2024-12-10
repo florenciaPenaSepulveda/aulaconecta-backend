@@ -27,7 +27,7 @@ export class CourseService{
     async deleteCourse (deleteCourse: DeleteCourseDto): Promise<boolean>{
         const existCourse = await this.courseRepository.findOne({where: {nameCourse: deleteCourse.nameCourse, level: deleteCourse.level}});
         if(!existCourse){
-            throw new BadRequestException('El curso no existe!')
+            throw new NotFoundException('El curso no existe!')
         }
         await this.courseRepository.delete(existCourse);
         return true;

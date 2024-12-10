@@ -1,4 +1,4 @@
-import { InputType, Field, Int } from '@nestjs/graphql';
+import { InputType, Field } from '@nestjs/graphql';
 import { CourseLevel } from '../enums/course-level.enums';
 
 @InputType()
