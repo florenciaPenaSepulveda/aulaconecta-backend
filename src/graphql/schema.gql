@@ -9,6 +9,7 @@ type UserEntity {
   rut: String!
   email: String!
   role: UserRoles!
+  guardianId: Int
 }
 
 """The roles a user can have in the system"""
@@ -17,45 +18,6 @@ enum UserRoles {
   Teacher
   Admin
   Parents
-}
-
-type AuthResponse {
-  token: String!
-  message: String!
-  verificacion: Boolean!
-  role: String!
-  firstName: String!
-  id: Float!
-  isChangePassword: Boolean!
-}
-
-"""La entidad Subject que representa una asignatura"""
-type SubjectEntity {
-  id: ID!
-  name: String!
-  numberOfClasses: Float!
-  idTeacher: Float!
-}
-
-type SubjectResponse {
-  isCreateSubject: Boolean!
-}
-
-type UserWithAttendanceDto {
-  user: UserEntity!
-  totalAsist: Float!
-  totalAbsences: Float!
-}
-
-type NoticeEntity {
-  id: Float!
-  title: String!
-  description: String!
-  imageUrl: String
-}
-
-type NoticeResponse {
-  isCreateNotice: Boolean!
 }
 
 """
@@ -74,6 +36,139 @@ type GradeEntity {
   subjectId: Float!
 }
 
+type AuthResponse {
+  token: String!
+  message: String!
+  verificacion: Boolean!
+  role: String!
+  firstName: String!
+  id: Float!
+  isChangePassword: Boolean!
+}
+
+type CourseEntity {
+  id: ID!
+  nameCourse: String!
+  level: CourseLevels!
+
+  """Las asignaturas asociadas al curso"""
+  subjects: [SubjectEntity!]!
+}
+
+"""Son los niveles de enseñansa de los colegios"""
+enum CourseLevels {
+  Basica
+  Media
+  Kinder
+  PreKinder
+}
+
+"""La entidad Subject que representa una asignatura"""
+type SubjectEntity {
+  id: ID!
+  name: String!
+
+  """El curso al que pertenece la asignatura"""
+  course: CourseEntity!
+  numberOfClasses: Float!
+  idTeacher: Float!
+}
+
+type SubjectResponse {
+  isCreateSubject: Boolean!
+}
+
+type UserWithAttendanceDto {
+  user: UserEntity!
+  totalAsist: Float!
+  totalAbsences: Float!
+}
+
+type StudentAttendanceDto {
+  subject: SubjectEntity!
+  totalAsist: Int!
+  totalAbsences: Int!
+}
+
+type StudentAttendanceSummary {
+  user: UserEntity!
+  totalAsist: Int!
+  totalAbsences: Int!
+  percentage: Float!
+}
+
+type SubjectAttendanceSummary {
+  subject: SubjectEntity!
+  students: Int!
+  classesHeld: Int!
+  totalAsist: Int!
+  totalAbsences: Int!
+  percentage: Float!
+  studentsSummary: [StudentAttendanceSummary!]!
+}
+
+type CourseAttendanceSummary {
+  course: CourseEntity!
+  students: Int!
+  classesHeld: Int!
+  totalAsist: Int!
+  totalAbsences: Int!
+  percentage: Float!
+  subjects: [SubjectAttendanceSummary!]!
+  studentsSummary: [StudentAttendanceSummary!]!
+}
+
+type AttendanceDaySummary {
+  date: String!
+  present: Int!
+  absent: Int!
+  percentage: Float!
+}
+
+type AttendanceMark {
+  date: String!
+  present: Boolean!
+}
+
+type StudentAttendanceCalendar {
+  user: UserEntity!
+  marks: [AttendanceMark!]!
+  totalAsist: Int!
+  totalAbsences: Int!
+  percentage: Float!
+}
+
+type SubjectAttendanceCalendar {
+  subject: SubjectEntity!
+  days: [AttendanceDaySummary!]!
+  students: [StudentAttendanceCalendar!]!
+}
+
+type NoticeEntity {
+  id: Float!
+  title: String!
+  description: String!
+  imageUrl: String
+  createdAt: DateTime!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type NoticeResponse {
+  isCreateNotice: Boolean!
+}
+
+type MessageEntity {
+  id: ID!
+  fromId: Int!
+  toId: Int!
+  content: String!
+  createdAt: DateTime!
+}
+
 type Query {
   getAllNotices: [NoticeEntity!]!
 
@@ -84,21 +179,58 @@ type Query {
   """Obtiene todos los usuarios con rol de student"""
   getAllStudents: [UserEntity!]!
 
+  """Obtiene todos los apoderados"""
+  getAllParents: [UserEntity!]!
+
+  """Pupilos del apoderado autenticado"""
+  myChildren: [UserEntity!]!
+
   """Obtiene los usuarios y su asistencia por asignatura"""
   listUsersBySubject(idSubject: Float!): [UserWithAttendanceDto!]!
+
+  """Asistencia de un estudiante por asignatura"""
+  attendanceByStudent(studentId: Int!): [StudentAttendanceDto!]!
+
+  """Resumen global de asistencia de una asignatura"""
+  subjectAttendanceSummary(subjectId: Int!): SubjectAttendanceSummary!
+
+  """Resumen global de asistencia de cada curso"""
+  courseAttendanceSummaries: [CourseAttendanceSummary!]!
+
+  """Calendario de asistencia por día de una asignatura"""
+  subjectAttendanceCalendar(subjectId: Int!): SubjectAttendanceCalendar!
+
+  """Listar todas las asignaturas."""
   listSubject: [SubjectEntity!]!
+
+  """Obtener una asignatura por su ID."""
+  subjectById(id: Int!): SubjectEntity
+
+  """
+  Obtener todas las asignaturas por ID de profesor, incluyendo el nombre del curso.
+  """
+  getAllSubjectByIdTeacher(
+    """ID del profesor."""
+    idTeacher: Int!
+  ): [SubjectEntity!]!
   gradesByStudentId(studentId: Float!): [GradeEntity!]!
   gradesBySubjectId(subjectId: Float!): [GradeEntity!]!
   findGradeById(id: Float!): GradeEntity!
   getAllGrades: [GradeEntity!]!
   gradesByStudentAndSubject(studentId: Float!, subjectId: Float!): [GradeEntity!]!
   averageGradeByStudentAndSubject(studentId: Float!, subjectId: Float!): Float!
+  listCourses: [CourseEntity!]!
+
+  """Usuarios con los que el usuario autenticado puede conversar"""
+  chatContacts: [UserEntity!]!
+  conversation(withId: Int!): [MessageEntity!]!
 }
 
 type Mutation {
   createNotice(title: String!, description: String!, imageUrl: String): NoticeResponse!
+  deleteNotice(id: Int!): Boolean!
 
-  """Create a new user (either student or teacher)"""
+  """Crea un usuario. Los profesores solo pueden crear estudiantes."""
   createUser(createUserDto: CreateUserDto!): UserEntity!
   removeUser(rut: String!): Boolean!
 
@@ -112,23 +244,58 @@ type Mutation {
   """Marca la asistencia de los estudiantes"""
   takeAsist(createAsistInput: CreateAsistDto!): Boolean!
 
-  """Create a new subject by providing the name and number of classes."""
+  """Inscribe un estudiante en una asignatura"""
+  enrollStudent(idUser: Int!, idSubject: Int!): Boolean!
+
+  """Quita un estudiante de una asignatura"""
+  unenrollStudent(idUser: Int!, idSubject: Int!): Boolean!
+
+  """
+  Crear una nueva asignatura proporcionando el nombre y número de clases.
+  """
   createSubject(
     """
-    The input data for creating a new subject, including name and number of classes.
+    Datos de entrada para crear una nueva asignatura, incluyendo nombre y número de clases.
     """
     createSubjectInput: CreateSubjectDto!
   ): SubjectResponse!
 
-  """Remove a subject by its name. Returns true if deletion is successful."""
+  """
+  Crear una nueva asignatura como administrador proporcionando el nombre, número de clases, ID del curso y ID del profesor.
+  """
+  addNewSubjectAdmin(
+    """
+    Datos de entrada para que un administrador cree una nueva asignatura, incluyendo nombre, número de clases, ID del curso y ID del profesor.
+    """
+    createSubjectAdminInput: CreateSubjectAdminDto!
+  ): SubjectResponse!
+
+  """
+  Eliminar una asignatura por su nombre. Retorna true si la eliminación es exitosa.
+  """
   removeSubject(
-    """The name of the subject to delete."""
+    """El nombre de la asignatura a eliminar."""
     name: String!
   ): Boolean!
-  updateSubject(createSubjectInput: UpdateSubjectDto!): Boolean!
+
+  """Actualizar una asignatura proporcionando los campos necesarios."""
+  updateSubject(
+    """Datos de entrada para actualizar una asignatura."""
+    updateSubjectInput: UpdateSubjectDto!
+  ): SubjectEntity!
+
+  """Eliminar una asignatura por su ID."""
+  deleteSubjectById(id: Int!): Boolean!
   createGrade(createGradeDto: CreateGradeDto!): GradeEntity!
   updateGrade(id: Float!, updateGradeDto: UpdateGradeDto!): GradeEntity!
   deleteGrade(id: Float!): Boolean!
+  createCourse(createCourseDto: CreateCourseDto!): Boolean!
+  deleteCourseDto(deleteCourseDto: DeleteCourseDto!): Boolean!
+  updateCourseDto(updateCourseDto: UpdateCourseDto!): Boolean!
+  createSemester(createSemesterDto: CreateSemesterDto!): Boolean!
+  deleteSemester(deleteSemesterDto: DeleteSemesterDto!): Boolean!
+  updateSemester(updateSemesterDto: UpdateSemesterDto!): Boolean!
+  sendMessage(toId: Int!, content: String!): MessageEntity!
 }
 
 input CreateUserDto {
@@ -138,16 +305,19 @@ input CreateUserDto {
   email: String!
   role: UserRoles!
   password: String
+  guardianRut: String
 }
 
 input UpdateUserDto {
   firstName: String
   lastName: String
   email: String
+  guardianRut: String
 }
 
 input CreateAsistDto {
   asistencias: [CreateAsistItemDto!]!
+  date: String
 }
 
 input CreateAsistItemDto {
@@ -160,12 +330,21 @@ input CreateAsistItemDto {
 input CreateSubjectDto {
   name: String!
   numberOfClasses: Int
+  courseId: Int!
+}
+
+input CreateSubjectAdminDto {
+  name: String!
+  numberOfClasses: Int
+  courseId: Int!
+  idTeacher: Int!
 }
 
 input UpdateSubjectDto {
   name: String!
   newName: String
   numberOfClasses: Int
+  courseId: Int
 }
 
 input CreateGradeDto {
@@ -178,4 +357,40 @@ input UpdateGradeDto {
   grade: Float
   studentId: Float
   subjectId: Float
+}
+
+input CreateCourseDto {
+  nameCourse: String!
+  level: CourseLevels!
+}
+
+input DeleteCourseDto {
+  nameCourse: String!
+  level: CourseLevels!
+}
+
+input UpdateCourseDto {
+  nameCourse: String!
+  newName: String
+  level: CourseLevels!
+  newLevel: CourseLevels
+}
+
+input CreateSemesterDto {
+  nameSemester: String!
+  startDate: DateTime!
+  endDate: DateTime!
+  deadline: DateTime!
+}
+
+input DeleteSemesterDto {
+  nameSemester: String!
+}
+
+input UpdateSemesterDto {
+  nameSemester: String!
+  newNameSemester: String
+  startDate: DateTime
+  endDate: DateTime
+  deadline: DateTime
 }

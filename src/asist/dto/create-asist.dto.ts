@@ -1,4 +1,4 @@
-import { IsArray, ValidateNested } from 'class-validator';
+import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { InputType, Field, Int} from '@nestjs/graphql';
 
@@ -25,4 +25,9 @@ export class CreateAsistDto {
     @ValidateNested({ each: true })
     @Type(() => CreateAsistItemDto)
     asistencias: CreateAsistItemDto[];
+
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsString()
+    date?: string;
 }
