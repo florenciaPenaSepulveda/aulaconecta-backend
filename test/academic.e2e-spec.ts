@@ -52,30 +52,34 @@ describe('Cursos, asignaturas, asistencia y notas (e2e)', () => {
     it('crea y lista cursos', async () => {
       const created = await gql(
         `mutation { createCourse(createCourseDto: { nameCourse: "${courseName}", level: Media }) }`,
+        admin.token,
       );
       expect(created.body.data.createCourse).toBe(true);
-      const list = await gql('{ listCourses { id nameCourse level subjects { id } } }');
+      const list = await gql('{ listCourses { id nameCourse level subjects { id } } }', admin.token);
       const course = list.body.data.listCourses.find((c: { nameCourse: string }) => c.nameCourse === courseName);
       expect(course.level).toBe('Media');
       courseId = Number(course.id);
     });
 
     it('rechaza un curso duplicado', async () => {
-      const res = await gql(`mutation { createCourse(createCourseDto: { nameCourse: "${courseName}", level: Media }) }`);
+      const res = await gql(`mutation { createCourse(createCourseDto: { nameCourse: "${courseName}", level: Media }) }`, admin.token);
       expect(res.body.errors[0].message).toMatch(/ya esta creado/);
     });
 
     it('actualiza un curso y valida los cambios', async () => {
       const ok = await gql(
         `mutation { updateCourseDto(updateCourseDto: { nameCourse: "${courseName}", level: Media, newName: "${renamedCourse}", newLevel: Basica }) }`,
+        admin.token,
       );
       expect(ok.body.data.updateCourseDto).toBe(true);
       const noChanges = await gql(
         `mutation { updateCourseDto(updateCourseDto: { nameCourse: "${renamedCourse}", level: Basica }) }`,
+        admin.token,
       );
       expect(noChanges.body.errors[0].message).toMatch(/No hay cambios/);
       const missing = await gql(
         'mutation { updateCourseDto(updateCourseDto: { nameCourse: "No existe", level: Basica, newName: "x" }) }',
+        admin.token,
       );
       expect(missing.body.errors[0].message).toMatch(/no existe/);
     });
@@ -88,7 +92,7 @@ describe('Cursos, asignaturas, asistencia y notas (e2e)', () => {
         teacher.token,
       );
       expect(res.body.data.createSubject.isCreateSubject).toBe(true);
-      const list = await gql('{ listSubject { id name idTeacher course { id } } }');
+      const list = await gql('{ listSubject { id name idTeacher course { id } } }', admin.token);
       const subject = list.body.data.listSubject.find((s: { name: string }) => s.name === subjectName);
       subjectId = Number(subject.id);
       expect(subject.idTeacher).toBe(teacher.id);
@@ -115,42 +119,47 @@ describe('Cursos, asignaturas, asistencia y notas (e2e)', () => {
     it('el administrador asigna asignaturas a un profesor', async () => {
       const ok = await gql(
         `mutation { addNewSubjectAdmin(createSubjectAdminInput: { name: "${subjectName} Admin", numberOfClasses: 5, courseId: ${courseId}, idTeacher: ${teacher.id} }) { isCreateSubject } }`,
+        admin.token,
       );
       expect(ok.body.data.addNewSubjectAdmin.isCreateSubject).toBe(true);
       const badCourse = await gql(
         `mutation { addNewSubjectAdmin(createSubjectAdminInput: { name: "x", courseId: 999999, idTeacher: ${teacher.id} }) { isCreateSubject } }`,
+        admin.token,
       );
       expect(badCourse.body.errors[0].message).toMatch(/no encontrado/);
       const badTeacher = await gql(
         `mutation { addNewSubjectAdmin(createSubjectAdminInput: { name: "x", courseId: ${courseId}, idTeacher: 0 }) { isCreateSubject } }`,
+        admin.token,
       );
       expect(badTeacher.body.errors[0].message).toMatch(/no válido/);
     });
 
     it('consulta por id y por profesor', async () => {
-      const byId = await gql(`{ subjectById(id: ${subjectId}) { name course { nameCourse } } }`);
+      const byId = await gql(`{ subjectById(id: ${subjectId}) { name course { nameCourse } } }`, admin.token);
       expect(byId.body.data.subjectById.course.nameCourse).toBe(renamedCourse);
-      const byTeacher = await gql(`{ getAllSubjectByIdTeacher(idTeacher: ${teacher.id}) { name } }`);
+      const byTeacher = await gql(`{ getAllSubjectByIdTeacher(idTeacher: ${teacher.id}) { name } }`, admin.token);
       expect(byTeacher.body.data.getAllSubjectByIdTeacher.length).toBeGreaterThan(0);
     });
 
     it('actualiza una asignatura', async () => {
       const res = await gql(
         `mutation { updateSubject(updateSubjectInput: { name: "${subjectName} Admin", newName: "${subjectName} Renombrada", numberOfClasses: 8, courseId: ${courseId} }) { name numberOfClasses } }`,
+        admin.token,
       );
       expect(res.body.data.updateSubject.name).toMatch(/Renombrada/);
-      const missing = await gql('mutation { updateSubject(updateSubjectInput: { name: "No existe" }) { name } }');
+      const missing = await gql('mutation { updateSubject(updateSubjectInput: { name: "No existe" }) { name } }', admin.token);
       expect(missing.body.errors[0].message).toMatch(/no encontrado/);
       const badCourse = await gql(
         `mutation { updateSubject(updateSubjectInput: { name: "${subjectName} Renombrada", courseId: 999999 }) { name } }`,
+        admin.token,
       );
       expect(badCourse.body.errors[0].message).toMatch(/no encontrado/);
     });
 
     it('elimina asignaturas por nombre', async () => {
-      const res = await gql(`mutation { removeSubject(name: "${subjectName} Renombrada") }`);
+      const res = await gql(`mutation { removeSubject(name: "${subjectName} Renombrada") }`, admin.token);
       expect(res.body.data.removeSubject).toBe(true);
-      const missing = await gql('mutation { removeSubject(name: "No existe") }');
+      const missing = await gql('mutation { removeSubject(name: "No existe") }', admin.token);
       expect(missing.body.errors[0].message).toMatch(/no encontrado/);
     });
   });
@@ -246,10 +255,10 @@ describe('Cursos, asignaturas, asistencia y notas (e2e)', () => {
     it('registra asistencia de un estudiante no inscrito aún', async () => {
       const res = await gql(
         `mutation { takeAsist(createAsistInput: { asistencias: [{ idUser: ${studentId}, idSubject: 999998, asist: 1, absences: 0 }] }) }`,
-        teacher.token,
+        admin.token,
       );
       expect(res.body.data.takeAsist).toBe(true);
-      await gql(`mutation { unenrollStudent(idUser: ${studentId}, idSubject: 999998) }`, teacher.token);
+      await gql(`mutation { unenrollStudent(idUser: ${studentId}, idSubject: 999998) }`, admin.token);
     });
 
     it('un apoderado no puede registrar asistencia', async () => {
@@ -353,7 +362,7 @@ describe('Cursos, asignaturas, asistencia y notas (e2e)', () => {
           average: averageGradeByStudentAndSubject(studentId: ${studentId}, subjectId: ${subjectId})
           none: averageGradeByStudentAndSubject(studentId: ${studentId}, subjectId: 999999)
         }`,
-        teacher.token,
+        admin.token,
       );
       const data = queries.body.data;
       expect(data.byStudent).toHaveLength(2);
@@ -406,6 +415,7 @@ describe('Cursos, asignaturas, asistencia y notas (e2e)', () => {
 
       const withSubjects = await gql(
         `{ listCourses { id subjects { id } } }`,
+        admin.token,
       );
       const course = withSubjects.body.data.listCourses.find((c: { id: string }) => Number(c.id) === courseId);
       for (const subject of course.subjects) {
@@ -413,19 +423,22 @@ describe('Cursos, asignaturas, asistencia y notas (e2e)', () => {
       }
       const res = await gql(
         `mutation { deleteCourseDto(deleteCourseDto: { nameCourse: "${renamedCourse}", level: Basica }) }`,
+        admin.token,
       );
       expect(res.body.data.deleteCourseDto).toBe(true);
       const missingCourse = await gql(
         `mutation { deleteCourseDto(deleteCourseDto: { nameCourse: "${renamedCourse}", level: Basica }) }`,
+        admin.token,
       );
       expect(missingCourse.body.errors[0].message).toMatch(/no existe/);
     });
 
     it('no elimina cursos con asignaturas asociadas', async () => {
-      const first = await gql('{ listCourses { nameCourse level subjects { id } } }');
+      const first = await gql('{ listCourses { nameCourse level subjects { id } } }', admin.token);
       const withSubjects = first.body.data.listCourses.find((c: { subjects: unknown[] }) => c.subjects.length > 0);
       const res = await gql(
         `mutation { deleteCourseDto(deleteCourseDto: { nameCourse: "${withSubjects.nameCourse}", level: ${withSubjects.level} }) }`,
+        admin.token,
       );
       expect(res.body.errors[0].message).toMatch(/asignaturas asociadas/);
     });

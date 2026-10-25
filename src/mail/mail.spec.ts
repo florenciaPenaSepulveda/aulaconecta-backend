@@ -41,4 +41,12 @@ describe('mail', () => {
     expect(reset.subject).toBe('Tu nueva contraseña');
     expect(reset.html).toContain('NuevaClave');
   });
+
+  it('escapa el HTML de los datos para evitar inyecciones en el correo', () => {
+    const credentials = credentialsTemplate('<script>alert(1)</script>@b.cl', '<b>"x"</b>');
+    expect(credentials.html).not.toContain('<script>');
+    expect(credentials.html).toContain('&lt;script&gt;');
+    expect(credentials.html).toContain('&lt;b&gt;&quot;x&quot;&lt;/b&gt;');
+    expect(resetTemplate('<i>').html).toContain('&lt;i&gt;');
+  });
 });

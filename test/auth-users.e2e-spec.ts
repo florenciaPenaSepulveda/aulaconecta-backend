@@ -40,19 +40,19 @@ describe('Autenticación y usuarios (e2e)', () => {
 
     it('rechaza un correo desconocido', async () => {
       const res = await gql('mutation { login(email: "nadie@test.cl", password: "xxxxxxx") { token } }');
-      expect(res.body.errors[0].message).toMatch(/Email no válido/);
+      expect(res.body.errors[0].message).toMatch(/Credenciales inválidas/);
     });
 
     it('rechaza una contraseña incorrecta', async () => {
       const res = await gql('mutation { login(email: "admin@aulaconecta.cl", password: "incorrecta") { token } }');
-      expect(res.body.errors[0].message).toMatch(/Contraseña o email no válido/);
+      expect(res.body.errors[0].message).toMatch(/Credenciales inválidas/);
     });
 
     it('rechaza a un usuario sin credenciales (estudiante)', async () => {
       const students = await gql('{ getAllStudents { email } }', admin.token);
       const email = students.body.data.getAllStudents[0].email;
       const res = await gql(`mutation { login(email: "${email}", password: "xxxxxxx") { token } }`);
-      expect(res.body.errors[0].message).toMatch(/sin credenciales/);
+      expect(res.body.errors[0].message).toMatch(/Credenciales inválidas/);
     });
   });
 
@@ -100,24 +100,27 @@ describe('Autenticación y usuarios (e2e)', () => {
       expect(res.body.errors[0].message).toMatch(/No token found/);
     });
 
-    it('rechaza la recuperación con un correo desconocido', async () => {
+    it('responde igual con un correo desconocido para no revelar qué correos existen', async () => {
       const res = await gql('mutation { forgotPass(email: "nadie@test.cl") { message } }');
-      expect(res.body.errors[0].message).toMatch(/Email no válido/);
+      expect(res.body.errors).toBeUndefined();
+      expect(res.body.data.forgotPass.message).toMatch(/Si el correo está registrado/);
     });
 
-    it('rechaza la recuperación de un usuario sin credenciales', async () => {
+    it('responde igual para un usuario sin credenciales', async () => {
       const students = await gql('{ getAllStudents { email } }', admin.token);
       const email = students.body.data.getAllStudents[0].email;
       const res = await gql(`mutation { forgotPass(email: "${email}") { message } }`);
-      expect(res.body.errors[0].message).toMatch(/no tiene credenciales/);
+      expect(res.body.errors).toBeUndefined();
+      expect(res.body.data.forgotPass.message).toMatch(/Si el correo está registrado/);
     });
 
-    it('informa cuando el envío de correos no está configurado', async () => {
+    it('no cambia la contraseña cuando el envío de correos no está configurado', async () => {
       if (process.env.MAIL_USER && process.env.MAIL_PASS) {
         return;
       }
       const res = await gql(`mutation { forgotPass(email: "${parentEmail}") { message } }`);
-      expect(res.body.errors[0].message).toMatch(/no está configurado/);
+      expect(res.body.data.forgotPass.message).toMatch(/Si el correo está registrado/);
+      expect((await login(parentEmail, 'Clave12345')).token).toBeTruthy();
     });
   });
 

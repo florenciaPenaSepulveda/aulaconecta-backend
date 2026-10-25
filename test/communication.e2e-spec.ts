@@ -135,25 +135,28 @@ describe('Anuncios, mensajes y semestres (e2e)', () => {
     it('crea, actualiza y elimina un semestre', async () => {
       const created = await gql(
         `mutation { createSemester(createSemesterDto: { nameSemester: "${name}", startDate: "2031-03-01T00:00:00.000Z", endDate: "2031-07-01T00:00:00.000Z", deadline: "2031-07-10T00:00:00.000Z" }) }`,
+        admin.token,
       );
       expect(created.body.data.createSemester).toBe(true);
       const duplicate = await gql(
         `mutation { createSemester(createSemesterDto: { nameSemester: "${name}", startDate: "2031-03-01T00:00:00.000Z", endDate: "2031-07-01T00:00:00.000Z", deadline: "2031-07-10T00:00:00.000Z" }) }`,
+        admin.token,
       );
       expect(duplicate.body.errors[0].message).toMatch(/ya existe/);
 
       const updated = await gql(
         `mutation { updateSemester(updateSemesterDto: { nameSemester: "${name}", newNameSemester: "${renamed}", startDate: "2031-03-02T00:00:00.000Z", endDate: "2031-07-02T00:00:00.000Z", deadline: "2031-07-11T00:00:00.000Z" }) }`,
+        admin.token,
       );
       expect(updated.body.data.updateSemester).toBe(true);
-      const noChanges = await gql(`mutation { updateSemester(updateSemesterDto: { nameSemester: "${renamed}" }) }`);
+      const noChanges = await gql(`mutation { updateSemester(updateSemesterDto: { nameSemester: "${renamed}" }) }`, admin.token);
       expect(noChanges.body.errors[0].message).toMatch(/No hay cambios/);
-      const missing = await gql('mutation { updateSemester(updateSemesterDto: { nameSemester: "No existe", newNameSemester: "x" }) }');
+      const missing = await gql('mutation { updateSemester(updateSemesterDto: { nameSemester: "No existe", newNameSemester: "x" }) }', admin.token);
       expect(missing.body.errors[0].message).toMatch(/no existe/);
 
-      const removed = await gql(`mutation { deleteSemester(deleteSemesterDto: { nameSemester: "${renamed}" }) }`);
+      const removed = await gql(`mutation { deleteSemester(deleteSemesterDto: { nameSemester: "${renamed}" }) }`, admin.token);
       expect(removed.body.data.deleteSemester).toBe(true);
-      const removedAgain = await gql(`mutation { deleteSemester(deleteSemesterDto: { nameSemester: "${renamed}" }) }`);
+      const removedAgain = await gql(`mutation { deleteSemester(deleteSemesterDto: { nameSemester: "${renamed}" }) }`, admin.token);
       expect(removedAgain.body.errors[0].message).toMatch(/no existe/);
     });
   });

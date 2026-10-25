@@ -1,8 +1,9 @@
 import 'dotenv/config';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request = require('supertest');
 import { AppModule } from './../src/app.module';
+import { configurarApp } from './../src/app.setup';
 
 export interface Session {
   token: string;
@@ -13,14 +14,17 @@ export interface Session {
 export const createApp = async (): Promise<INestApplication> => {
   const moduleFixture = await Test.createTestingModule({ imports: [AppModule] }).compile();
   const app = moduleFixture.createNestApplication();
-  app.useGlobalPipes(new ValidationPipe({ forbidUnknownValues: false }));
+  configurarApp(app);
   await app.init();
   return app;
 };
 
 export const createClient = (app: INestApplication) => {
-  const gql = (query: string, token?: string, rawAuth?: string) => {
+  const gql = (query: string, token?: string, rawAuth?: string, origin?: string) => {
     const req = request(app.getHttpServer()).post('/graphql');
+    if (origin) {
+      req.set('Origin', origin);
+    }
     if (rawAuth) {
       req.set('Authorization', rawAuth);
     } else if (token) {
