@@ -37,6 +37,6 @@ export class Guard implements CanActivate {
         if (type !== 'Bearer' || !token) {
             return undefined;
         }
-        return token;// Devuelve el token si está correctamente formateado
+        return token;
     }
 }
