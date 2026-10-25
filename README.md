@@ -1,6 +1,96 @@
-# AulaConecta API
+# AulaConecta · Backend
 
-API GraphQL con NestJS, TypeORM y MySQL.
+API GraphQL de **AulaConecta**, una plataforma de gestión escolar que conecta a profesores, apoderados y administración: cursos, asignaturas, asistencia por día, calificaciones, anuncios y mensajería directa entre profesores y apoderados.
+
+Construida con NestJS, TypeORM y MySQL 8.
+
+## Repositorios del proyecto
+
+| Repositorio | Descripción |
+|---|---|
+| **aulaconecta-backend** (este) | API GraphQL, autenticación JWT y base de datos |
+| [aulaconecta-web](https://github.com/florenciaPenaSepulveda/aulaconecta-web) | Panel web por rol (React, Vite, Tailwind, daisyUI) |
+| [aulaconecta-app](https://github.com/florenciaPenaSepulveda/aulaconecta-app) | Aplicación móvil (Expo, React Native) |
+
+Los tres repositorios son independientes y se conectan a través de esta API.
+
+## Funcionalidades por rol
+
+| Rol | Qué puede hacer |
+|---|---|
+| Profesor | Crear asignaturas, inscribir estudiantes, registrar asistencia por fecha, ver el calendario de asistencia, poner notas, publicar anuncios, escribir a los apoderados y registrar estudiantes |
+| Apoderado | Ver notas y asistencia de sus pupilos, leer anuncios y escribir a los profesores |
+| Administrador | Todo lo anterior, más cursos, usuarios de cualquier rol y asignación de profesores |
+
+### Calendario de asistencia
+
+La asistencia se guarda por día. Un día aparece en el calendario de una asignatura solo cuando se registra la asistencia de al menos un estudiante, y al registrar se puede elegir la fecha (también para corregir días anteriores).
+
+## Requisitos
+
+- Node.js 24 LTS (ver `.nvmrc`)
+- Docker (para MySQL)
+
+## Puesta en marcha
+
+1. Base de datos:
+
+   ```
+   cd docker-crud
+   docker compose up -d
+   ```
+
+   MySQL 8 en el puerto 3308 con un volumen persistente.
+
+2. API:
+
+   ```
+   cp .env.example .env
+   npm install
+   npm run build
+   npm run start:prod
+   ```
+
+   Queda en `http://localhost:3000/graphql` (con playground). Las tablas se crean al iniciar.
+
+3. Datos de ejemplo (con la API iniciada al menos una vez):
+
+   ```
+   npm run seed
+   ```
+
+   Carga un colegio completo: 5 cursos, 30 asignaturas, 7 profesores, unos 40 estudiantes con sus apoderados, asistencia diaria, casi mil notas, anuncios y conversaciones. Si ya hay datos no hace nada; `npm run seed:reset` regenera todo desde cero.
+
+## Usuarios de ejemplo
+
+Contraseña de todos: `Demo1234`
+
+| Rol | Correo |
+|---|---|
+| Administrador | admin@aulaconecta.cl |
+| Profesor | profesor@aulaconecta.cl |
+| Profesora | marta@aulaconecta.cl |
+| Apoderada (Juan y Sofía) | apoderado@aulaconecta.cl |
+| Apoderado (Diego) | apoderado2@aulaconecta.cl |
+
+Los demás profesores y apoderados generados usan el formato `nombre.apellido@aulaconecta.cl` y la misma contraseña. Los estudiantes no tienen credenciales de acceso.
+
+## Variables de entorno
+
+| Variable | Descripción |
+|---|---|
+| `PORT` | Puerto de la API (3000) |
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` | Conexión a MySQL (puerto 3308 con el compose incluido) |
+| `JWT_SECRET` | Clave para firmar los tokens |
+| `MAIL_USER`, `MAIL_PASS` | Cuenta Gmail y contraseña de aplicación para enviar correos |
+
+### Envío de correos
+
+1. Activa la verificación en dos pasos en la cuenta de Gmail.
+2. Crea una contraseña de aplicación en myaccount.google.com/apppasswords (16 caracteres).
+3. Escribe tu correo en `MAIL_USER` y esa contraseña en `MAIL_PASS` dentro de `.env`, y reinicia la API.
+
+`.env` está en `.gitignore`: las credenciales nunca se suben, solo `.env.example`. Sin estas variables todo funciona, excepto la recuperación de contraseña, que avisa que el envío de correos no está configurado.
 
 ## Comandos
 
@@ -9,28 +99,24 @@ API GraphQL con NestJS, TypeORM y MySQL.
 | `npm run build` | Compila el proyecto |
 | `npm run start:dev` | Modo desarrollo con recarga |
 | `npm run start:prod` | Ejecuta la versión compilada |
-| `npm run seed` | Carga datos de ejemplo (idempotente) |
+| `npm run seed` / `npm run seed:reset` | Carga o regenera los datos de ejemplo |
 | `npm test` | Pruebas unitarias y de extremo a extremo |
 | `npm run test:cov` | Pruebas con reporte y umbral de cobertura del 80 % |
-| `npm run seed:reset` | Regenera los datos de ejemplo desde cero |
-
-## Base de datos
-
-```
-cd docker-crud
-docker compose up -d
-```
-
-MySQL 8 en el puerto 3308 con un volumen persistente.
 
 ## Módulos
 
-`auth`, `user`, `course`, `subject`, `asist`, `grades`, `advices` (anuncios), `messages` (mensajería profesor–apoderado) y `semester`.
-
-El esquema GraphQL se genera en `src/graphql/schema.gql` y el playground está disponible en `/graphql`.
+`auth`, `user`, `course`, `subject`, `asist` (asistencia por día y resúmenes), `grades`, `advices` (anuncios), `messages` (mensajería profesor–apoderado), `semester`, `mail` y `guard`.
 
 ## Seguridad
 
-- Autenticación con JWT; el secreto se define en `JWT_SECRET`.
-- Las operaciones sensibles verifican el rol del usuario (profesor, administrador o apoderado).
+- Autenticación con JWT; las operaciones sensibles verifican el rol del usuario.
 - Un apoderado solo puede consultar notas y asistencia de los estudiantes a su cargo.
+- Los secretos se leen del entorno y nunca se versionan.
+
+## Pruebas
+
+Cobertura actual del 98 % (sentencias). Las pruebas e2e requieren la base de datos levantada y con los datos de ejemplo, y limpian lo que crean.
+
+## Autoría
+
+Proyecto académico desarrollado en equipo (originalmente ClosedAI); esta versión forma parte del portafolio de [Florencia Peña Sepúlveda](https://github.com/florenciaPenaSepulveda).
