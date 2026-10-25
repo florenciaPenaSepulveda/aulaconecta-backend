@@ -252,7 +252,7 @@ describe('Seguridad y permisos (e2e)', () => {
         );
         expect(res.body.errors).toBeDefined();
       }
-      const change = await gql('mutation { changePassword(newPassword: "abc") { message } }', owner.token);
+      const change = await gql('mutation { changePassword(currentPassword: "Clave12345", newPassword: "abc") { message } }', owner.token);
       expect(change.body.errors).toBeDefined();
     });
 

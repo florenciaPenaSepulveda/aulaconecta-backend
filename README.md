@@ -119,7 +119,7 @@ Los demás profesores y apoderados generados usan el formato `nombre.apellido@au
 - Cursos y semestres solo los gestiona el administrador. Un profesor solo ve y modifica sus propias asignaturas, con su asistencia y sus notas; el listado global de notas es del administrador.
 - Los profesores solo crean, modifican o eliminan estudiantes; las cuentas de profesores y administradores las gestiona el administrador, que no puede eliminar la suya.
 - Un apoderado solo puede consultar notas y asistencia de los estudiantes a su cargo.
-- Las contraseñas se guardan con bcrypt; deben tener entre 8 y 72 caracteres, con letras y números. El inicio de sesión devuelve el mismo error para un correo inexistente y para una clave incorrecta.
+- Las contraseñas se guardan con bcrypt; deben tener entre 8 y 72 caracteres, con letras y números. Para cambiarla hay que indicar la contraseña actual (o la temporal, tras una recuperación), y la nueva debe ser distinta. El inicio de sesión devuelve el mismo error para un correo inexistente y para una clave incorrecta.
 - Límite de solicitudes por IP, profundidad máxima de 10 niveles en las consultas GraphQL, cabeceras de seguridad (helmet) y CORS restringido a los orígenes configurados.
 - Los correos escapan el HTML de los datos que incluyen.
 - Los secretos se leen del entorno, se validan al arrancar y nunca se versionan.

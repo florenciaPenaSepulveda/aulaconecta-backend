@@ -239,7 +239,7 @@ type Mutation {
   login(email: String!, password: String!): AuthResponse!
   forgotPass(email: String!): AuthResponse!
   register(firstName: String!, lastName: String!, rut: String!, email: String!, password: String!, role: String!): AuthResponse!
-  changePassword(newPassword: String!): AuthResponse!
+  changePassword(currentPassword: String!, newPassword: String!): AuthResponse!
 
   """Marca la asistencia de los estudiantes"""
   takeAsist(createAsistInput: CreateAsistDto!): Boolean!

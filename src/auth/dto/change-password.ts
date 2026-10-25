@@ -1,8 +1,14 @@
 import { ArgsType, Field } from "@nestjs/graphql";
-import { IsString, Matches, MaxLength, MinLength } from "class-validator";
+import { IsNotEmpty, IsString, Matches, MaxLength, MinLength } from "class-validator";
 
 @ArgsType()
 export class ChangePasswordDto {
+    @Field()
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(72)
+    currentPassword: string;
+
     @Field()
     @IsString()
     @MinLength(8)

@@ -89,14 +89,32 @@ describe('Autenticación y usuarios (e2e)', () => {
   describe('contraseñas', () => {
     it('permite cambiar la contraseña con sesión activa', async () => {
       const session = await login(teacherEmail, 'Clave12345');
-      const res = await gql('mutation { changePassword(newPassword: "NuevaClave123") { message } }', session.token);
+      const res = await gql(
+        'mutation { changePassword(currentPassword: "Clave12345", newPassword: "NuevaClave123") { message } }',
+        session.token,
+      );
       expect(res.body.data.changePassword.message).toMatch(/actualizada/);
       const again = await login(teacherEmail, 'NuevaClave123');
       expect(again.token).toBeTruthy();
     });
 
+    it('exige la contraseña actual correcta para cambiarla', async () => {
+      const session = await login(teacherEmail, 'NuevaClave123');
+      const wrong = await gql(
+        'mutation { changePassword(currentPassword: "Equivocada1", newPassword: "OtraClave123") { message } }',
+        session.token,
+      );
+      expect(wrong.body.errors[0].message).toMatch(/contraseña actual no es correcta/);
+      const same = await gql(
+        'mutation { changePassword(currentPassword: "NuevaClave123", newPassword: "NuevaClave123") { message } }',
+        session.token,
+      );
+      expect(same.body.errors[0].message).toMatch(/distinta de la actual/);
+      expect((await login(teacherEmail, 'NuevaClave123')).token).toBeTruthy();
+    });
+
     it('exige un token para cambiar la contraseña', async () => {
-      const res = await gql('mutation { changePassword(newPassword: "NuevaClave123") { message } }');
+      const res = await gql('mutation { changePassword(currentPassword: "x", newPassword: "NuevaClave123") { message } }');
       expect(res.body.errors[0].message).toMatch(/No token found/);
     });
 

@@ -89,10 +89,16 @@ export class AuthService {
         return await this.authRepository.findOneBy({ idUser: userId });
     }
 
-    async changePassword(userId: number, { newPassword }: ChangePasswordDto) {
+    async changePassword(userId: number, { currentPassword, newPassword }: ChangePasswordDto) {
         const auth = await this.findByIdAuth(userId);
         if (!auth) {
             throw new UnauthorizedException("Usuario sin credenciales de autenticación");
+        }
+        if (!(await bcryptjs.compare(currentPassword, auth.password))) {
+            throw new BadRequestException("La contraseña actual no es correcta");
+        }
+        if (currentPassword === newPassword) {
+            throw new BadRequestException("La nueva contraseña debe ser distinta de la actual");
         }
         const hashedNewPass = await bcryptjs.hash(newPassword, 10);
 
