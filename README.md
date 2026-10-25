@@ -128,6 +128,7 @@ En desarrollo y en las pruebas TypeORM sincroniza el esquema automáticamente. E
 - Un apoderado solo puede consultar notas y asistencia de los estudiantes a su cargo.
 - Las contraseñas se guardan con bcrypt; deben tener entre 8 y 72 caracteres, con letras y números. Para cambiarla hay que indicar la contraseña actual (o la temporal, tras una recuperación), y la nueva debe ser distinta. El inicio de sesión devuelve el mismo error para un correo inexistente y para una clave incorrecta.
 - Límite de solicitudes por IP, profundidad máxima de 10 niveles en las consultas GraphQL, cabeceras de seguridad (helmet) y CORS restringido a los orígenes configurados.
+- Cada sesión lleva una versión que se invalida al cambiar o restablecer la contraseña y al eliminar al usuario: los tokens anteriores dejan de funcionar de inmediato y quien cambia su clave recibe un token nuevo.
 - Los correos escapan el HTML de los datos que incluyen.
 - Los secretos se leen del entorno, se validan al arrancar y nunca se versionan.
 
