@@ -1,17 +1,21 @@
-version: "3.8"
 services:
   mysql:
     image: mysql:8.0
-    container_name: mysql_crud_user
-    restart: always
+    container_name: aulaconecta_mysql
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: db_crud
       MYSQL_USER: crud_db
       MYSQL_PASSWORD: root
     volumes:
-      - ../mysql:/var/lib/mysql
+      - aulaconecta_db:/var/lib/mysql
     ports:
       - "3308:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 volumes:
-  db_data: {}
+  aulaconecta_db:
