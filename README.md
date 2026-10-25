@@ -1,5 +1,7 @@
 # AulaConecta · Backend
 
+[![CI](https://github.com/florenciaPenaSepulveda/aulaconecta-backend/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/florenciaPenaSepulveda/aulaconecta-backend/actions/workflows/ci.yml)
+
 API GraphQL de **AulaConecta**, una plataforma de gestión escolar que conecta a profesores, apoderados y administración: cursos, asignaturas, asistencia por día, calificaciones, anuncios y mensajería directa entre profesores y apoderados.
 
 Construida con NestJS, TypeORM y MySQL 8.
