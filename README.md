@@ -124,7 +124,7 @@ Los demás profesores y apoderados generados usan el formato `nombre.apellido@au
 - Los correos escapan el HTML de los datos que incluyen.
 - Los secretos se leen del entorno, se validan al arrancar y nunca se versionan.
 
-Dependencias: las vulnerabilidades conocidas se corrigieron salvo las que exigen migrar a NestJS 12 y Apollo Server 5 (cambio mayor pendiente).
+Dependencias: NestJS 11, Apollo Server 5 y TypeORM 0.3, sin vulnerabilidades conocidas (`npm audit` en 0).
 
 ## Pruebas
 
