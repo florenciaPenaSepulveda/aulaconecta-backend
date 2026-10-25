@@ -9,6 +9,7 @@ import { SubjectAttendanceCalendar } from "./dto/attendance-calendar.dto";
 import { Guard } from "src/guard/guard";
 import { CurrentUser } from "src/guard/current-user.decorator";
 import { UserService } from "src/user/user.service";
+import { SubjectService } from "src/subject/subject.service";
 import { UserRoles } from "src/user/enums/user-roles.enums";
 
 @Resolver()
@@ -17,6 +18,7 @@ export class AsistResolver {
     constructor(
         private readonly asistService: AsistService,
         private readonly userService: UserService,
+        private readonly subjectService: SubjectService,
     ) {}
 
     @Mutation(() => Boolean, { description: 'Marca la asistencia de los estudiantes' })
@@ -24,7 +26,10 @@ export class AsistResolver {
         @CurrentUser() current: { id: number },
         @Args('createAsistInput') createAsistDto: CreateAsistDto,
     ): Promise<boolean> {
-        await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+        const actor = await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+        for (const idSubject of new Set(createAsistDto.asistencias.map((item) => item.idSubject))) {
+            await this.subjectService.assertCanManage(actor, idSubject);
+        }
         await this.asistService.addAsistencias(createAsistDto);
         return true;
     }
@@ -35,7 +40,8 @@ export class AsistResolver {
         @Args('idUser', { type: () => Int }) idUser: number,
         @Args('idSubject', { type: () => Int }) idSubject: number,
     ): Promise<boolean> {
-        await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+        const actor = await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+        await this.subjectService.assertCanManage(actor, idSubject);
         return this.asistService.enrollStudent(idUser, idSubject);
     }
 
@@ -45,12 +51,18 @@ export class AsistResolver {
         @Args('idUser', { type: () => Int }) idUser: number,
         @Args('idSubject', { type: () => Int }) idSubject: number,
     ): Promise<boolean> {
-        await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+        const actor = await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+        await this.subjectService.assertCanManage(actor, idSubject);
         return this.asistService.unenrollStudent(idUser, idSubject);
     }
 
     @Query(() => [UserWithAttendanceDto], { description: 'Obtiene los usuarios y su asistencia por asignatura' })
-    async listUsersBySubject(@Args('idSubject') idSubject: number): Promise<UserWithAttendanceDto[]> {
+    async listUsersBySubject(
+        @CurrentUser() current: { id: number },
+        @Args('idSubject') idSubject: number,
+    ): Promise<UserWithAttendanceDto[]> {
+        const actor = await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+        await this.subjectService.assertCanManage(actor, idSubject);
         return this.asistService.listUsersBySubject(idSubject);
     }
 
@@ -78,7 +90,8 @@ export class AsistResolver {
         @CurrentUser() current: { id: number },
         @Args('subjectId', { type: () => Int }) subjectId: number,
     ): Promise<SubjectAttendanceSummary> {
-        await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+        const actor = await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+        await this.subjectService.assertCanManage(actor, subjectId);
         return this.asistService.subjectAttendanceSummary(subjectId);
     }
 
@@ -93,7 +106,8 @@ export class AsistResolver {
         @CurrentUser() current: { id: number },
         @Args('subjectId', { type: () => Int }) subjectId: number,
     ): Promise<SubjectAttendanceCalendar> {
-        await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+        const actor = await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+        await this.subjectService.assertCanManage(actor, subjectId);
         return this.asistService.subjectAttendanceCalendar(subjectId);
     }
 }

@@ -5,6 +5,7 @@ import { AttendanceRecordEntity } from "./entities/attendance-record.entity";
 import { AsistResolver } from "./asist.resolver";
 import { AsistService } from "./asist.service";
 import { UserModule } from "src/user/user.module";
+import { SubjectModule } from "src/subject/subject.module";
 import { SubjectEntity } from "src/subject/entities/subject.entity";
 import { CourseEntity } from "src/course/entity/course.entity";
 
@@ -12,6 +13,7 @@ import { CourseEntity } from "src/course/entity/course.entity";
     imports: [
         TypeOrmModule.forFeature([AsistEntity, AttendanceRecordEntity, SubjectEntity, CourseEntity]),
         UserModule,
+        SubjectModule,
     ],
     providers: [AsistResolver, AsistService],
 })

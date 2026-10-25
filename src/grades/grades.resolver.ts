@@ -7,6 +7,7 @@ import { UpdateGradeDto } from './dto/updateGrade.dto';
 import { Guard } from 'src/guard/guard';
 import { CurrentUser } from 'src/guard/current-user.decorator';
 import { UserService } from 'src/user/user.service';
+import { SubjectService } from 'src/subject/subject.service';
 import { UserRoles } from 'src/user/enums/user-roles.enums';
 
 @Resolver(() => GradeEntity)
@@ -15,7 +16,13 @@ export class GradesResolver {
   constructor(
     private readonly gradesService: GradesService,
     private readonly userService: UserService,
+    private readonly subjectService: SubjectService,
   ) {}
+
+  private async assertCanManageSubject(userId: number, subjectId: number): Promise<void> {
+    const actor = await this.userService.assertRole(userId, [UserRoles.Teacher, UserRoles.Admin]);
+    await this.subjectService.assertCanManage(actor, subjectId);
+  }
 
   private async assertCanRead(userId: number, studentId: number): Promise<void> {
     const actor = await this.userService.assertRole(userId, [
@@ -36,7 +43,7 @@ export class GradesResolver {
     @CurrentUser() current: { id: number },
     @Args('createGradeDto') createGradeDto: CreateGradeDto,
   ): Promise<GradeEntity> {
-    await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+    await this.assertCanManageSubject(current.id, createGradeDto.subjectId);
     return await this.gradesService.createGrade(createGradeDto);
   }
 
@@ -54,7 +61,7 @@ export class GradesResolver {
     @CurrentUser() current: { id: number },
     @Args('subjectId') subjectId: number,
   ): Promise<GradeEntity[]> {
-    await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+    await this.assertCanManageSubject(current.id, subjectId);
     return await this.gradesService.findGradesBySubjectId(subjectId);
   }
 
@@ -64,7 +71,11 @@ export class GradesResolver {
     @Args('id') id: number,
     @Args('updateGradeDto') updateGradeDto: UpdateGradeDto,
   ): Promise<GradeEntity> {
-    await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+    const actual = await this.gradesService.findGradeById(id);
+    await this.assertCanManageSubject(current.id, actual ? actual.subjectId : 0);
+    if (updateGradeDto.subjectId !== undefined) {
+      await this.assertCanManageSubject(current.id, updateGradeDto.subjectId);
+    }
     return await this.gradesService.updateGrade(id, updateGradeDto);
   }
 
@@ -73,7 +84,8 @@ export class GradesResolver {
     @CurrentUser() current: { id: number },
     @Args('id') id: number,
   ): Promise<boolean> {
-    await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+    const actual = await this.gradesService.findGradeById(id);
+    await this.assertCanManageSubject(current.id, actual ? actual.subjectId : 0);
     return await this.gradesService.deleteGrade(id);
   }
 
@@ -82,13 +94,14 @@ export class GradesResolver {
     @CurrentUser() current: { id: number },
     @Args('id') id: number,
   ): Promise<GradeEntity | undefined> {
-    await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
-    return await this.gradesService.findGradeById(id);
+    const grade = await this.gradesService.findGradeById(id);
+    await this.assertCanManageSubject(current.id, grade ? grade.subjectId : 0);
+    return grade;
   }
 
   @Query(() => [GradeEntity], { name: 'getAllGrades' })
   async getAllGrades(@CurrentUser() current: { id: number }): Promise<GradeEntity[]> {
-    await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+    await this.userService.assertRole(current.id, [UserRoles.Admin]);
     return await this.gradesService.getAllGrades();
   }
 

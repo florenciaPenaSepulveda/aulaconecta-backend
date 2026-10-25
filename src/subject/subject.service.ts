@@ -1,12 +1,12 @@
-import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from "@nestjs/common";
+import { Injectable, BadRequestException, ForbiddenException, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { SubjectEntity } from "./entities/subject.entity";
 import { CreateSubjectDto } from "./dto/createSubject.dto";
 import { UpdateSubjectDto } from "./dto/updateSubject.dto";
 import { SubjectResponse } from "./entities/subjectResponse";
-import { jwtConstants } from "src/auth/constant/jwt.constants";
-import * as jwt from 'jsonwebtoken';
+import { UserEntity } from "src/user/entity/user.entity";
+import { UserRoles } from "src/user/enums/user-roles.enums";
 import { CourseEntity } from "src/course/entity/course.entity";
 import { AsistEntity } from "src/asist/entities/asist.entity";
 import { AttendanceRecordEntity } from "src/asist/entities/attendance-record.entity";
@@ -15,6 +15,7 @@ import { CreateSubjectAdminDto } from "./dto/createSubjectAdmin.dto";
 
 @Injectable()
 export class SubjectService {
+    private readonly logger = new Logger(SubjectService.name);
 
     constructor (
         @InjectRepository(SubjectEntity)
@@ -24,14 +25,20 @@ export class SubjectService {
         private readonly courseRepository : Repository<CourseEntity>
     ){}
 
-    async addNewSubject(createSubjectDto: CreateSubjectDto, token: string): Promise<SubjectResponse> {
-        let userData: any;
-        try {
-            userData = jwt.verify(token, jwtConstants.secret);
-        } catch (error) {
-            throw new UnauthorizedException('Token inválido');
+    async assertCanManage(actor: UserEntity, subjectId: number): Promise<void> {
+        if (actor.role !== UserRoles.Teacher) {
+            return;
         }
+        const subject = await this.subjectRepository.findOne({ where: { id: subjectId } });
+        if (!subject) {
+            throw new BadRequestException('La asignatura no existe');
+        }
+        if (subject.idTeacher !== actor.id) {
+            throw new ForbiddenException('No tienes permisos sobre esta asignatura');
+        }
+    }
 
+    async addNewSubject(createSubjectDto: CreateSubjectDto, teacherId: number): Promise<SubjectResponse> {
         const course = await this.courseRepository.findOne({ where: { id: createSubjectDto.courseId } });
         if (!course) {
             throw new BadRequestException(`Curso con el ID "${createSubjectDto.courseId}" no encontrado`);
@@ -40,7 +47,7 @@ export class SubjectService {
         const newSubject = this.subjectRepository.create({
             name: createSubjectDto.name,
             numberOfClasses: createSubjectDto.numberOfClasses || 0,
-            idTeacher: userData.id,
+            idTeacher: teacherId,
             course: course
         });
 
@@ -50,7 +57,7 @@ export class SubjectService {
                 isCreateSubject: true
             } as SubjectResponse;
         } catch (error) {
-            console.error(error);
+            this.logger.error(error);
             return {
                 isCreateSubject: false
             } as SubjectResponse;
@@ -82,29 +89,31 @@ export class SubjectService {
                 isCreateSubject: true
             } as SubjectResponse;
         } catch (error) {
-            console.error(error);
+            this.logger.error(error);
             return {
                 isCreateSubject: false
             } as SubjectResponse;
         }
     }
 
-    async deleteSubject(name: string): Promise<boolean> {
+    async deleteSubject(name: string, actor: UserEntity): Promise<boolean> {
         const subject = await this.subjectRepository.findOne({ where: { name } });
         if (!subject) {
             throw new BadRequestException(`Asignatura con el nombre "${name}" no encontrado`);
         }
+        await this.assertCanManage(actor, subject.id);
         await this.subjectRepository.remove(subject);
         return true;
     }
 
-    async updateSubject(updateSubjectDto: UpdateSubjectDto): Promise<SubjectEntity> {
+    async updateSubject(updateSubjectDto: UpdateSubjectDto, actor: UserEntity): Promise<SubjectEntity> {
         const { name, newName, numberOfClasses, courseId } = updateSubjectDto;
         const subject = await this.subjectRepository.findOne({ where: { name }, relations: ['course'] });
 
         if (!subject) {
             throw new BadRequestException(`Asignatura con el nombre "${name}" no encontrado`);
         }
+        await this.assertCanManage(actor, subject.id);
 
         if (newName !== undefined) {
             subject.name = newName;
@@ -124,11 +133,12 @@ export class SubjectService {
         return subject;
     }
 
-    async deleteSubjectById(id: number): Promise<boolean> {
+    async deleteSubjectById(id: number, actor: UserEntity): Promise<boolean> {
         const subject = await this.subjectRepository.findOne({ where: { id } });
         if (!subject) {
             throw new BadRequestException('La asignatura no existe');
         }
+        await this.assertCanManage(actor, subject.id);
         await this.subjectRepository.manager.delete(AsistEntity, { idSubject: id });
         await this.subjectRepository.manager.delete(AttendanceRecordEntity, { idSubject: id });
         await this.subjectRepository.manager.delete(GradeEntity, { subjectId: id });
