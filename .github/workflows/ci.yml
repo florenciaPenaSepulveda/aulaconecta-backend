@@ -1,0 +1,63 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main, development, testing]
+  pull_request:
+
+jobs:
+  test:
+    name: Compilación y pruebas con cobertura
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: db_crud
+          MYSQL_USER: crud_db
+          MYSQL_PASSWORD: root
+        ports:
+          - 3308:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: "3308"
+      DB_NAME: db_crud
+      DB_USER: crud_db
+      DB_PASS: root
+      JWT_SECRET: ci-secret
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar
+        run: npm run build
+
+      - name: Crear las tablas y cargar los datos de ejemplo
+        run: |
+          node dist/main &
+          APP_PID=$!
+          for i in $(seq 1 60); do
+            curl -s -o /dev/null -X POST http://localhost:3000/graphql -H 'content-type: application/json' -d '{"query":"{__typename}"}' && break
+            sleep 2
+          done
+          npm run seed
+          kill $APP_PID
+
+      - name: Pruebas con cobertura
+        run: npm run test:cov
