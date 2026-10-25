@@ -1,9 +1,7 @@
-import { Injectable, UnauthorizedException, BadRequestException, ServiceUnavailableException } from "@nestjs/common";
+import { Injectable, UnauthorizedException, BadRequestException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { JwtService } from "@nestjs/jwt";
-import * as jwt from 'jsonwebtoken';
-import { jwtConstants } from "./constant/jwt.constants";
 import { AuthEntity } from "./entity/auth.entity";
 import { UserService } from "src/user/user.service";
 import { LoginDto } from "./dto/login.dto";
@@ -15,6 +13,9 @@ import { AuthResponse } from "./entity/authresponse.entity";
 import { UserRoles } from "src/user/enums/user-roles.enums";
 import { ChangePasswordDto } from "./dto/change-password";
 import { isMailConfigured, resetTemplate, sendMail } from "src/mail/mail";
+
+const HASH_FICTICIO = bcryptjs.hashSync('contrasena-ficticia', 10);
+const CREDENCIALES_INVALIDAS = 'Credenciales inválidas';
 
 @Injectable()
 export class AuthService {
@@ -28,16 +29,10 @@ export class AuthService {
 
     async login({ email, password }: LoginDto) {
         const user = await this.userService.findOneByEmail(email);
-        if (!user) {
-            throw new UnauthorizedException("Email no válido");
-        }
-        const auth = await this.authRepository.findOne({ where: { idUser: user.id } });
-        if (!auth) {
-            throw new UnauthorizedException("Usuario sin credenciales de autenticación");
-        }
-        const isPasswordValid = await bcryptjs.compare(password, auth.password);
-        if (!isPasswordValid) {
-            throw new UnauthorizedException("Contraseña o email no válido");
+        const auth = user ? await this.authRepository.findOne({ where: { idUser: user.id } }) : null;
+        const isPasswordValid = await bcryptjs.compare(password, auth ? auth.password : HASH_FICTICIO);
+        if (!user || !auth || !isPasswordValid) {
+            throw new UnauthorizedException(CREDENCIALES_INVALIDAS);
         }
         const token = await this.jwtService.signAsync({ id: user.id });
 
@@ -73,16 +68,11 @@ export class AuthService {
     }
 
     async forgotpass({ email }: ForgotPassDto) {
+        const respuesta = { message: "Si el correo está registrado, recibirás una nueva contraseña" } as AuthResponse;
         const user = await this.userService.findOneByEmail(email);
-        if (!user) {
-            throw new UnauthorizedException("Email no válido");
-        }
-        const auth = await this.findByIdAuth(user.id);
-        if (!auth) {
-            throw new BadRequestException("El usuario no tiene credenciales de acceso");
-        }
-        if (!isMailConfigured()) {
-            throw new ServiceUnavailableException("El envío de correos no está configurado");
+        const auth = user ? await this.findByIdAuth(user.id) : null;
+        if (!user || !auth || !isMailConfigured()) {
+            return respuesta;
         }
         const newPass = randomBytes(8).toString('hex');
         const hashedNewPass = await bcryptjs.hash(newPass, 10);
@@ -92,18 +82,15 @@ export class AuthService {
         const template = resetTemplate(newPass);
         await sendMail(email, template.subject, template.text, template.html);
 
-        return {
-            message: "Contraseña reseteada. Verifica tu email"
-        } as AuthResponse;
+        return respuesta;
     }
 
     async findByIdAuth(userId: number) {
         return await this.authRepository.findOneBy({ idUser: userId });
     }
 
-    async changePassword(token: string, { newPassword }: ChangePasswordDto) {
-        const datosUsuario: any = jwt.verify(token, jwtConstants.secret);
-        const auth = await this.findByIdAuth(datosUsuario.id);
+    async changePassword(userId: number, { newPassword }: ChangePasswordDto) {
+        const auth = await this.findByIdAuth(userId);
         if (!auth) {
             throw new UnauthorizedException("Usuario sin credenciales de autenticación");
         }

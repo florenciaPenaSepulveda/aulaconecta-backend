@@ -1,6 +1,6 @@
 import { ArgsType, Field } from "@nestjs/graphql";
 import { Transform } from "class-transformer";
-import { IsEmail, IsString, MinLength} from "class-validator";
+import { IsEmail, IsEnum, IsString, Matches, MaxLength, MinLength } from "class-validator";
 import { UserRoles } from "src/user/enums/user-roles.enums";
 
 @ArgsType()
@@ -30,11 +30,13 @@ export class RegisterDto{
     @Field()
     @Transform(({value}) => value.trim())
     @IsString()
-    @MinLength(6)
+    @MinLength(8)
+    @MaxLength(72)
+    @Matches(/(?=.*[A-Za-z])(?=.*\d)/, { message: 'La contraseña debe incluir letras y números' })
     password: string;
 
     @Field()
-    @IsString()
+    @IsEnum(UserRoles)
     role: UserRoles;
 
 }
