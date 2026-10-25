@@ -83,7 +83,11 @@ Los demás profesores y apoderados generados usan el formato `nombre.apellido@au
 |---|---|
 | `PORT` | Puerto de la API (3000) |
 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` | Conexión a MySQL (puerto 3308 con el compose incluido) |
-| `JWT_SECRET` | Clave para firmar los tokens |
+| `JWT_SECRET` | Clave para firmar los tokens (en producción, al menos 32 caracteres) |
+| `NODE_ENV` | Con `production` se desactivan el Playground y la introspección de GraphQL, se exige una clave JWT larga y no se sincroniza el esquema de la base de datos |
+| `CORS_ORIGINS` | Orígenes del frontend autorizados, separados por coma (por defecto los de desarrollo local) |
+| `RATE_LIMIT` | Solicitudes por minuto y por IP (300 por defecto); el inicio de sesión, el registro y el cambio de contraseña admiten 10 |
+| `TRUST_PROXY` | Número de proxies de confianza delante de la API, para limitar por la IP real del cliente |
 | `MAIL_USER`, `MAIL_PASS` | Cuenta Gmail y contraseña de aplicación para enviar correos |
 
 ### Envío de correos
@@ -92,7 +96,7 @@ Los demás profesores y apoderados generados usan el formato `nombre.apellido@au
 2. Crea una contraseña de aplicación en myaccount.google.com/apppasswords (16 caracteres).
 3. Escribe tu correo en `MAIL_USER` y esa contraseña en `MAIL_PASS` dentro de `.env`, y reinicia la API.
 
-`.env` está en `.gitignore`: las credenciales nunca se suben, solo `.env.example`. Sin estas variables todo funciona, excepto la recuperación de contraseña, que avisa que el envío de correos no está configurado.
+`.env` está en `.gitignore`: las credenciales nunca se suben, solo `.env.example`. Sin estas variables todo funciona, excepto la recuperación de contraseña, que no envía nada. Por seguridad, la respuesta de la recuperación es la misma exista o no el correo.
 
 ## Comandos
 
@@ -111,13 +115,20 @@ Los demás profesores y apoderados generados usan el formato `nombre.apellido@au
 
 ## Seguridad
 
-- Autenticación con JWT; las operaciones sensibles verifican el rol del usuario.
+- Autenticación con JWT; todas las operaciones, salvo el ingreso, el registro y la recuperación de contraseña, exigen sesión y verifican el rol del usuario.
+- Cursos y semestres solo los gestiona el administrador. Un profesor solo ve y modifica sus propias asignaturas, con su asistencia y sus notas; el listado global de notas es del administrador.
+- Los profesores solo crean, modifican o eliminan estudiantes; las cuentas de profesores y administradores las gestiona el administrador, que no puede eliminar la suya.
 - Un apoderado solo puede consultar notas y asistencia de los estudiantes a su cargo.
-- Los secretos se leen del entorno y nunca se versionan.
+- Las contraseñas se guardan con bcrypt; deben tener entre 8 y 72 caracteres, con letras y números. El inicio de sesión devuelve el mismo error para un correo inexistente y para una clave incorrecta.
+- Límite de solicitudes por IP, profundidad máxima de 10 niveles en las consultas GraphQL, cabeceras de seguridad (helmet) y CORS restringido a los orígenes configurados.
+- Los correos escapan el HTML de los datos que incluyen.
+- Los secretos se leen del entorno, se validan al arrancar y nunca se versionan.
+
+Dependencias: las vulnerabilidades conocidas se corrigieron salvo las que exigen migrar a NestJS 12 y Apollo Server 5 (cambio mayor pendiente).
 
 ## Pruebas
 
-Cobertura actual del 98 % (sentencias). Las pruebas e2e requieren la base de datos levantada y con los datos de ejemplo, y limpian lo que crean.
+96 pruebas con 98 % de cobertura (sentencias), incluida una suite de seguridad y permisos. Las pruebas e2e requieren la base de datos levantada y con los datos de ejemplo, y limpian lo que crean.
 
 ## Autoría
 
