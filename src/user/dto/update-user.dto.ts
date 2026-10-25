@@ -10,4 +10,7 @@ export class UpdateUserDto {
 
     @Field({ nullable: true })
     email?: string;
+
+    @Field({ nullable: true })
+    guardianRut?: string;
 }

@@ -1,5 +1,5 @@
 import {Entity, PrimaryGeneratedColumn, Column} from 'typeorm';
-import {ObjectType, Field, ID} from '@nestjs/graphql';
+import {ObjectType, Field, ID, Int} from '@nestjs/graphql';
 import { UserRoles } from '../enums/user-roles.enums';
 
 @ObjectType()
@@ -32,4 +32,8 @@ export class UserEntity {
     })
     @Field(() => UserRoles)
     role: UserRoles;
+
+    @Column({ type: 'int', nullable: true })
+    @Field(() => Int, { nullable: true })
+    guardianId?: number | null;
 }

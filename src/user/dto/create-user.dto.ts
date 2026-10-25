@@ -23,4 +23,9 @@ export class CreateUserDto{
     @IsOptional()
     @IsString()
     password?: string;
+
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsString()
+    guardianRut?: string;
 }

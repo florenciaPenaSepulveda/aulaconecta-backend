@@ -1,13 +1,16 @@
-import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from "@nestjs/common";
 import { UserEntity } from "./entity/user.entity";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import * as bcrypt from 'bcryptjs';
 import { UserRoles } from "./enums/user-roles.enums";
 import { AuthEntity } from "src/auth/entity/auth.entity";
+import { AsistEntity } from "src/asist/entities/asist.entity";
+import { AttendanceRecordEntity } from "src/asist/entities/attendance-record.entity";
+import { GradeEntity } from "src/grades/entities/grade.entity";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
-import * as nodemailer from 'nodemailer';
+import { credentialsTemplate, sendMail } from "src/mail/mail";
 
 @Injectable()
 export class UserService {
@@ -19,56 +22,65 @@ export class UserService {
         private readonly authRepository: Repository<AuthEntity>,
     ) {}
 
+    private async resolveGuardianId(guardianRut?: string): Promise<number | null> {
+        if (!guardianRut) {
+            return null;
+        }
+        const guardian = await this.userRepository.findOne({ where: { rut: guardianRut } });
+        if (!guardian || guardian.role !== UserRoles.Parents) {
+            throw new BadRequestException(`No existe un apoderado con RUT ${guardianRut}.`);
+        }
+        return guardian.id;
+    }
+
     async addNewUser(createUserDto: CreateUserDto): Promise<UserEntity> {
-        const { role, password, ...userData } = createUserDto;
+        const { role, password, guardianRut, ...userData } = createUserDto;
         if (!role) {
             throw new BadRequestException('El campo role es obligatorio');
         }
-        const rut = createUserDto.rut
-        const email = createUserDto.email
-        const existingUserByRut = await this.userRepository.findOne({ where: { rut } });
-        if (existingUserByRut) {
+        const { rut, email } = createUserDto;
+        if (await this.userRepository.findOne({ where: { rut } })) {
             throw new BadRequestException(`El RUT ${rut} ya está registrado en el sistema.`);
         }
-
-        const existingUserByEmail = await this.userRepository.findOne({ where: { email } });
-        if (existingUserByEmail) {
+        if (await this.userRepository.findOne({ where: { email } })) {
             throw new BadRequestException(`El email ${email} ya está registrado en el sistema.`);
         }
-        
-        const newUser = this.userRepository.create({
-            ...userData,
-            role,
-        });
-        const savedUser = await this.userRepository.save(newUser);
-        
-        if (role === UserRoles.Teacher || role === UserRoles.Admin || role === UserRoles.Parents) {
-            if (!password) {
-                throw new BadRequestException('Se requiere una contraseña para roles Teacher, Admin o Parent');
-            }
-            const hashedPassword = await bcrypt.hash(password, 10);
-            const authEntity = this.authRepository.create({
-                idUser: savedUser.id,
-                password: hashedPassword,
-                isChangePass: true
-            });
-            await this.authRepository.save(authEntity);
-            await this.sendCredentialsEmail(email, password);
+        const needsPassword = role !== UserRoles.Student;
+        if (needsPassword && !password) {
+            throw new BadRequestException('Se requiere una contraseña para este rol');
+        }
+        const guardianId = role === UserRoles.Student ? await this.resolveGuardianId(guardianRut) : null;
+
+        const savedUser = await this.userRepository.save(
+            this.userRepository.create({ ...userData, role, guardianId }),
+        );
+
+        if (needsPassword) {
+            await this.authRepository.save(
+                this.authRepository.create({
+                    idUser: savedUser.id,
+                    password: await bcrypt.hash(password, 10),
+                    isChangePass: false,
+                }),
+            );
+            const template = credentialsTemplate(email, password);
+            await sendMail(email, template.subject, template.text, template.html).catch(() => false);
         }
         return savedUser;
     }
 
     async deleteUser(rut: string): Promise<boolean> {
-        const user = await this.userRepository.findOne({ where: { rut: rut } });
+        const user = await this.userRepository.findOne({ where: { rut } });
         if (!user) {
             throw new BadRequestException('Usuario no encontrado');
         }
-        const authEntry = await this.authRepository.findOne({where:{ idUser: user.id }});
-        if (!authEntry) {
-            throw new BadRequestException ("Llame a soporte, se viene serio mi chamo!");
-        }
+        const manager = this.userRepository.manager;
+        await this.authRepository.delete({ idUser: user.id });
+        await manager.delete(AsistEntity, { idUser: user.id });
+        await manager.delete(AttendanceRecordEntity, { idUser: user.id });
+        await manager.delete(GradeEntity, { studentId: user.id });
+        await this.userRepository.update({ guardianId: user.id }, { guardianId: null });
         await this.userRepository.remove(user);
-        await this.authRepository.remove(authEntry);
         return true;
     }
 
@@ -77,9 +89,12 @@ export class UserService {
         if (!user) {
             throw new BadRequestException(`Usuario con rut ${rut} no encontrado`);
         }
-        const emailCheck = await this.userRepository.findOne({where: {email: updateUserDto.email}});
-        if(emailCheck){
-            throw new BadRequestException("El email ingresado ya esta en uso!");
+        if (updateUserDto.email && updateUserDto.email !== user.email) {
+            const emailOwner = await this.userRepository.findOne({ where: { email: updateUserDto.email } });
+            if (emailOwner) {
+                throw new BadRequestException("El email ingresado ya esta en uso!");
+            }
+            user.email = updateUserDto.email;
         }
         if (updateUserDto.firstName) {
             user.firstName = updateUserDto.firstName;
@@ -87,12 +102,11 @@ export class UserService {
         if (updateUserDto.lastName) {
             user.lastName = updateUserDto.lastName;
         }
-        if (updateUserDto.email) {
-            user.email = updateUserDto.email;
+        if (updateUserDto.guardianRut !== undefined && user.role === UserRoles.Student) {
+            user.guardianId = await this.resolveGuardianId(updateUserDto.guardianRut || undefined);
         }
         return await this.userRepository.save(user);
     }
-
 
     async findByRut(rut: string): Promise<UserEntity> {
         const user = await this.userRepository.findOne({ where: { rut } });
@@ -107,66 +121,46 @@ export class UserService {
     }
 
     async getAllStudents(): Promise<UserEntity[]> {
-        return await this.userRepository.find({
-            where: { role: UserRoles.Student },
-        });
+        return await this.userRepository.find({ where: { role: UserRoles.Student } });
+    }
+
+    async getAllParents(): Promise<UserEntity[]> {
+        return await this.userRepository.find({ where: { role: UserRoles.Parents } });
+    }
+
+    async getChildren(guardianId: number): Promise<UserEntity[]> {
+        return await this.userRepository.find({ where: { guardianId, role: UserRoles.Student } });
+    }
+
+    async assertRole(userId: number, roles: UserRoles[]): Promise<UserEntity> {
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+        if (!user || !roles.includes(user.role)) {
+            throw new ForbiddenException('No tienes permisos para realizar esta acción');
+        }
+        return user;
     }
 
     async updatePassword(id: number, newPassword: string): Promise<void> {
         await this.authRepository.update(id, { password: newPassword });
     }
 
-    async updateChangePass(id: number, newIsChangePass: boolean): Promise<void>{
-        await this.authRepository.update(id, {isChangePass: newIsChangePass});
-    }
-
-    async sendCredentialsEmail(email:string, password:string){
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: 'marcapp.service@gmail.com',
-            pass: 'REDACTED'
-        }
-    });
-
-    const mailOptions = {
-        from: '"MarcApp" <marcapp.service@gmail.com>',
-        to: email,
-        subject: 'Credenciales de acceso a MarcApp',
-        text: `Hola,\n\nTus credenciales de acceso a MarcApp son:\n\nUsuario: ${email}\nContraseña: ${password}\n\nTe recomendamos cambiar tu contraseña después de iniciar sesión.\n\nSaludos,\nEquipo de MarcApp`,
-        html: `
-            <html>
-                <body>
-                    <div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; color: #333;">
-                        <h2>Hola,</h2>
-                        <p>Tus credenciales de acceso a <strong>MarcApp</strong> son:</p>
-                        <p style="font-size: 18px; color: #555;">
-                            <strong>Usuario:</strong> ${email}<br><br>
-                            <strong>Contraseña:</strong> <span style="background-color: #f0f0f0; padding: 8px 12px; border-radius: 4px; font-weight: bold;">${password}</span>
-                        </p>
-                        <p>Te recomendamos cambiar esta contraseña por una propia tan pronto como inicies sesión.</p>
-                        <p>Si tienes alguna consulta, no dudes en contactarnos.</p>
-                        <footer>
-                            <p>Saludos cordiales,</p>
-                            <p>Equipo de <strong>MarcApp</strong></p>
-                        </footer>
-                    </div>
-                </body>
-            </html>
-        `
-    };
-    await transporter.sendMail(mailOptions);
+    async updateChangePass(id: number, newIsChangePass: boolean): Promise<void> {
+        await this.authRepository.update(id, { isChangePass: newIsChangePass });
     }
 
     async findUserById(id: number): Promise<UserEntity> {
-        const user = await this.userRepository.findOne({
-            where: { id },
-            select: ['id', 'firstName', 'lastName', 'rut', 'email', 'role'],
-        });
+        const user = await this.userRepository.findOne({ where: { id } });
         if (!user) {
             throw new NotFoundException(`Usuario con id ${id} no encontrado`);
         }
         return user;
+    }
+
+    async findUsersByIds(ids: number[]): Promise<UserEntity[]> {
+        if (!ids.length) {
+            return [];
+        }
+        return await this.userRepository.find({ where: { id: In(ids) } });
     }
 
     async findOneByEmail(email: string) {
