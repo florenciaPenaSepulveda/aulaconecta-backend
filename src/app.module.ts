@@ -17,6 +17,7 @@ import { MessagesModule } from './messages/messages.module';
 import { join } from 'path';
 import { esProduccion } from './config/environment';
 import { GqlThrottlerGuard } from './security/gql-throttler.guard';
+import { opcionesBase } from './database/data-source';
 
 
 @Module({
@@ -39,14 +40,10 @@ import { GqlThrottlerGuard } from './security/gql-throttler.guard';
     SemesterModule,
     MessagesModule,
     TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: process.env.DB_HOST,
-      port: Number(process.env.DB_PORT),
-      database: process.env.DB_NAME,
-      username: process.env.DB_USER,
-      password: process.env.DB_PASS,
+      ...opcionesBase(),
       autoLoadEntities: true,
       synchronize: !esProduccion(),
+      migrationsRun: esProduccion(),
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver:ApolloDriver,

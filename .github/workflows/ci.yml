@@ -48,6 +48,9 @@ jobs:
       - name: Compilar
         run: npm run build
 
+      - name: Verificar que las migraciones reproducen el esquema
+        run: npm run migration:check
+
       - name: Crear las tablas y cargar los datos de ejemplo
         run: |
           node dist/main &
