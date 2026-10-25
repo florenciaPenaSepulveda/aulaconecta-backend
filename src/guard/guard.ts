@@ -2,10 +2,14 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { JwtService } from "@nestjs/jwt";
 import { GqlExecutionContext } from "@nestjs/graphql";
 import { jwtConstants } from "src/auth/constant/jwt.constants";
+import { SessionService } from "src/security/session.service";
 
 @Injectable()
 export class Guard implements CanActivate {
-    constructor(private jwtService: JwtService) {}
+    constructor(
+        private jwtService: JwtService,
+        private sessionService: SessionService,
+    ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> { 
 
@@ -20,9 +24,11 @@ export class Guard implements CanActivate {
             const payload = await this.jwtService.verifyAsync(token, {
                 secret: jwtConstants.secret,
             });
+            if (!(await this.sessionService.isCurrent(payload))) {
+                throw new UnauthorizedException("Token is invalid or expired");
+            }
             request.user = payload;
         } catch (error) {
-
             throw new UnauthorizedException("Token is invalid or expired");
         }
         return true;

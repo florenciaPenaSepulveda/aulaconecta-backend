@@ -17,12 +17,14 @@ import { MessagesModule } from './messages/messages.module';
 import { join } from 'path';
 import { esProduccion } from './config/environment';
 import { GqlThrottlerGuard } from './security/gql-throttler.guard';
+import { SecurityModule } from './security/security.module';
 import { opcionesBase } from './database/data-source';
 
 
 @Module({
   providers: [{ provide: APP_GUARD, useClass: GqlThrottlerGuard }],
   imports: [
+    SecurityModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60000,

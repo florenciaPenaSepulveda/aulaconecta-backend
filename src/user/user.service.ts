@@ -140,8 +140,11 @@ export class UserService {
         return user;
     }
 
-    async updatePassword(id: number, newPassword: string): Promise<void> {
+    async updatePassword(id: number, newPassword: string): Promise<number> {
         await this.authRepository.update(id, { password: newPassword });
+        await this.authRepository.increment({ id }, 'tokenVersion', 1);
+        const auth = await this.authRepository.findOneByOrFail({ id });
+        return auth.tokenVersion;
     }
 
     async updateChangePass(id: number, newIsChangePass: boolean): Promise<void> {

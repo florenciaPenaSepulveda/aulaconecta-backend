@@ -34,7 +34,7 @@ export class AuthService {
         if (!user || !auth || !isPasswordValid) {
             throw new UnauthorizedException(CREDENCIALES_INVALIDAS);
         }
-        const token = await this.jwtService.signAsync({ id: user.id });
+        const token = await this.jwtService.signAsync({ id: user.id, v: auth.tokenVersion });
 
         return {
             message: "Inicio de sesión exitoso",
@@ -102,11 +102,12 @@ export class AuthService {
         }
         const hashedNewPass = await bcryptjs.hash(newPassword, 10);
 
-        await this.userService.updatePassword(auth.id, hashedNewPass);
+        const version = await this.userService.updatePassword(auth.id, hashedNewPass);
         await this.userService.updateChangePass(auth.id, false);
 
         return {
-            message: "Contraseña actualizada correctamente"
+            message: "Contraseña actualizada correctamente",
+            token: await this.jwtService.signAsync({ id: userId, v: version }),
         } as AuthResponse;
     }
 }

@@ -16,4 +16,7 @@ export class AuthEntity{
 
     @Column({default:false})
     isChangePass: boolean
+
+    @Column({ type: 'int', default: 0 })
+    tokenVersion: number;
 }
