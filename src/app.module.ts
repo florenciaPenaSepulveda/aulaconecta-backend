@@ -10,6 +10,7 @@ import { SemesterModule } from './semester/semester.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { GradesModule } from './grades/grades.module';
 import { ApolloDriver, ApolloDriverConfig} from '@nestjs/apollo';
+import { MessagesModule } from './messages/messages.module';
 import { join } from 'path';
 
 
@@ -23,13 +24,14 @@ import { join } from 'path';
     GradesModule,
     CourseModule,
     SemesterModule,
+    MessagesModule,
     TypeOrmModule.forRoot({
       type: 'mysql',
-      host: 'localhost',
-      port: 3308,
-      database: 'db_crud',
-      username: 'crud_db',
-      password: 'root',
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT),
+      database: process.env.DB_NAME,
+      username: process.env.DB_USER,
+      password: process.env.DB_PASS,
       autoLoadEntities: true,
       synchronize: true,
     }),
