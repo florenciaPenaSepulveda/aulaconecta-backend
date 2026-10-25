@@ -1,4 +1,5 @@
 import { INestApplication } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { createApp, createClient, randomRut, uniqueSuffix } from './helpers';
 
 describe('Seguridad y permisos (e2e)', () => {
@@ -278,6 +279,25 @@ describe('Seguridad y permisos (e2e)', () => {
       } finally {
         delete process.env.PROBAR_LIMITES;
       }
+    });
+
+    it('rechaza tokens firmados sin versión de sesión', async () => {
+      const token = app.get(JwtService).sign({ id: admin.id });
+      const res = await gql('{ listCourses { id } }', token);
+      expect(res.body.errors[0].message).toMatch(/Token is invalid or expired/);
+    });
+
+    it('rechaza el token de un usuario que ya fue eliminado', async () => {
+      const rut = randomRut();
+      const email = `seg.eliminado${suffix}@test.cl`;
+      await gql(
+        `mutation { register(firstName: "Temporal", lastName: "Eliminado", rut: "${rut}", email: "${email}", password: "Clave12345", role: "teacher") { message } }`,
+      );
+      const session = await login(email, 'Clave12345');
+      expect((await gql('{ listCourses { id } }', session.token)).body.errors).toBeUndefined();
+      await gql(`mutation { removeUser(rut: "${rut}") }`, admin.token);
+      const res = await gql('{ listCourses { id } }', session.token);
+      expect(res.body.errors[0].message).toMatch(/Token is invalid or expired/);
     });
 
     it('rechaza consultas demasiado profundas', async () => {

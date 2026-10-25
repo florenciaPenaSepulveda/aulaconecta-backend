@@ -90,10 +90,14 @@ describe('Autenticación y usuarios (e2e)', () => {
     it('permite cambiar la contraseña con sesión activa', async () => {
       const session = await login(teacherEmail, 'Clave12345');
       const res = await gql(
-        'mutation { changePassword(currentPassword: "Clave12345", newPassword: "NuevaClave123") { message } }',
+        'mutation { changePassword(currentPassword: "Clave12345", newPassword: "NuevaClave123") { message token } }',
         session.token,
       );
       expect(res.body.data.changePassword.message).toMatch(/actualizada/);
+      const stale = await gql('{ myChildren { id } }', session.token);
+      expect(stale.body.errors[0].message).toMatch(/Token is invalid or expired/);
+      const fresh = await gql('{ myChildren { id } }', res.body.data.changePassword.token);
+      expect(fresh.body.errors).toBeUndefined();
       const again = await login(teacherEmail, 'NuevaClave123');
       expect(again.token).toBeTruthy();
     });
