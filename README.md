@@ -106,8 +106,15 @@ Los demás profesores y apoderados generados usan el formato `nombre.apellido@au
 | `npm run start:dev` | Modo desarrollo con recarga |
 | `npm run start:prod` | Ejecuta la versión compilada |
 | `npm run seed` / `npm run seed:reset` | Carga o regenera los datos de ejemplo |
+| `npm run migration:generate -- src/database/migrations/Nombre` | Genera una migración a partir de los cambios en las entidades |
+| `npm run migration:run` / `migration:revert` | Aplica o revierte migraciones |
+| `npm run migration:check` | Comprueba que las migraciones reproducen exactamente el esquema de las entidades (se ejecuta en la integración continua) |
 | `npm test` | Pruebas unitarias y de extremo a extremo |
 | `npm run test:cov` | Pruebas con reporte y umbral de cobertura del 80 % |
+
+## Base de datos y migraciones
+
+En desarrollo y en las pruebas TypeORM sincroniza el esquema automáticamente. En producción (`NODE_ENV=production`) la sincronización está desactivada y la API aplica las migraciones pendientes de `src/database/migrations` al arrancar, de modo que un cambio en una entidad nunca borra datos por sí solo: se genera una migración, se revisa y se publica. Al agregar una entidad nueva, regístrala también en `src/database/data-source.ts` (una prueba avisa si falta).
 
 ## Módulos
 
