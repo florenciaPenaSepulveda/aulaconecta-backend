@@ -5,31 +5,28 @@ import { NoticeEntity } from "./entities/notice.entity";
 import { NoticeDto } from "./dto/notice.dto";
 import { NoticeResponse } from "./entities/noticeResponse.entity";
 
-
 @Injectable()
-export class AdvicesService{
+export class AdvicesService {
     constructor(
         @InjectRepository(NoticeEntity)
         private readonly advicesRepository: Repository<NoticeEntity>,
-    ){}
+    ) {}
 
     async createNotice(notificationDto: NoticeDto): Promise<NoticeResponse> {
-        const newNotice = this.advicesRepository.create(notificationDto);
         try {
-            await this.advicesRepository.save(newNotice);
-            return {
-                isCreateNotice: true
-            } as NoticeResponse;
+            await this.advicesRepository.save(this.advicesRepository.create(notificationDto));
+            return { isCreateNotice: true } as NoticeResponse;
         } catch (error) {
-            console.log(error)
+            return { isCreateNotice: false } as NoticeResponse;
         }
-        
-        return {
-            isCreateNotice: false
-        } as NoticeResponse;
     }
-    
+
     async getAllNotices(): Promise<NoticeEntity[]> {
-        return await this.advicesRepository.find();
+        return await this.advicesRepository.find({ order: { createdAt: 'DESC', id: 'DESC' } });
+    }
+
+    async deleteNotice(id: number): Promise<boolean> {
+        const result = await this.advicesRepository.delete(id);
+        return (result.affected ?? 0) > 0;
     }
 }

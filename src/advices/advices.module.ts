@@ -3,12 +3,13 @@ import { AdvicesResolver } from "./advices.resolver";
 import { AdvicesService } from "./advices.service";
 import { NoticeEntity } from "./entities/notice.entity";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { UserModule } from "src/user/user.module";
 
 @Module({
-    imports:[
-        TypeOrmModule.forFeature([NoticeEntity])
+    imports: [
+        TypeOrmModule.forFeature([NoticeEntity]),
+        UserModule,
     ],
-    providers: [AdvicesService, AdvicesResolver]
+    providers: [AdvicesService, AdvicesResolver],
 })
-
-export class AdvicesModule{}
+export class AdvicesModule {}

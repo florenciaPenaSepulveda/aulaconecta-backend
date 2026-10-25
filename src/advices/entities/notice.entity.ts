@@ -1,5 +1,5 @@
 import { Field, ObjectType } from '@nestjs/graphql';
-import {Entity, PrimaryGeneratedColumn, Column} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
 @ObjectType()
 @Entity()
@@ -17,6 +17,10 @@ export class NoticeEntity {
   description: string;
 
   @Column({ nullable: true })
-  @Field({ nullable: true }) 
+  @Field({ nullable: true })
   imageUrl?: string;
+
+  @CreateDateColumn()
+  @Field()
+  createdAt: Date;
 }
