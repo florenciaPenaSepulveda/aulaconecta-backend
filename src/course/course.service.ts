@@ -14,6 +14,10 @@ export class CourseService{
         private readonly courseRepository: Repository<CourseEntity>,
     ){}
 
+    async findAll(): Promise<CourseEntity[]>{
+        return await this.courseRepository.find({ relations: ['subjects'] });
+    }
+
     async addNewCourse(createCourseDto: CreateCourseDto): Promise<boolean>{
         const existCourseByName = await this.courseRepository.findOne({where: {nameCourse: createCourseDto.nameCourse, level: createCourseDto.level}});
         if(existCourseByName) {
@@ -29,7 +33,11 @@ export class CourseService{
         if(!existCourse){
             throw new NotFoundException('El curso no existe!')
         }
-        await this.courseRepository.delete(existCourse);
+        try {
+            await this.courseRepository.delete(existCourse.id);
+        } catch (error) {
+            throw new BadRequestException('El curso tiene asignaturas asociadas y no puede eliminarse');
+        }
         return true;
     }
 

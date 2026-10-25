@@ -28,7 +28,7 @@ export class SemesterService{
         if(!existSemester){
             throw new NotFoundException('Semestre no existe!');
         }
-        await this.semesterRepository.delete(existSemester);
+        await this.semesterRepository.delete(existSemester.id);
         return true;
     }
 

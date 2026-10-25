@@ -7,7 +7,7 @@ export class CreateGradeDto {
     @Field(() => Float)
     @IsNotEmpty()
     @IsNumber()
-    @Min(0)
+    @Min(1)
     @Max(7)
     grade: number;
 

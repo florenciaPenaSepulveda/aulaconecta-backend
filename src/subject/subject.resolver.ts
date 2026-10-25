@@ -53,6 +53,17 @@ export class SubjectResolver {
         return this.subjectService.findAll();
     }
 
+    @UseGuards(Guard)
+    @Mutation(() => Boolean, { description: 'Eliminar una asignatura por su ID.' })
+    deleteSubjectById(@Args('id', { type: () => Int }) id: number): Promise<boolean> {
+        return this.subjectService.deleteSubjectById(id);
+    }
+
+    @Query(() => SubjectEntity, { nullable: true, description: 'Obtener una asignatura por su ID.' })
+    subjectById(@Args('id', { type: () => Int }) id: number): Promise<SubjectEntity | null> {
+        return this.subjectService.findById(id);
+    }
+
     @Query(() => [SubjectEntity], { description: 'Obtener todas las asignaturas por ID de profesor, incluyendo el nombre del curso.' })
     getAllSubjectByIdTeacher(
         @Args("idTeacher", { type: () => Int, description: 'ID del profesor.' }) 

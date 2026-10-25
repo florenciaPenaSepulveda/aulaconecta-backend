@@ -10,6 +10,11 @@ export class CourseResolver{
 
     constructor (private readonly courseService: CourseService){}
 
+    @Query(() => [CourseEntity])
+    async listCourses(): Promise<CourseEntity[]>{
+        return this.courseService.findAll();
+    }
+
     @Mutation(() => Boolean)
     async createCourse(@Args('createCourseDto') createCourseDto: CreateCourseDto): Promise<boolean>{
         return this.courseService.addNewCourse(createCourseDto);

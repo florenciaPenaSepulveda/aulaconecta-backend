@@ -1,77 +1,114 @@
 import { Resolver, Mutation, Args, Query, Float } from '@nestjs/graphql';
+import { ForbiddenException, UseGuards } from '@nestjs/common';
 import { GradesService } from './grades.service';
 import { GradeEntity } from './entities/grade.entity';
 import { CreateGradeDto } from './dto/createGrade.dto';
 import { UpdateGradeDto } from './dto/updateGrade.dto';
+import { Guard } from 'src/guard/guard';
+import { CurrentUser } from 'src/guard/current-user.decorator';
+import { UserService } from 'src/user/user.service';
+import { UserRoles } from 'src/user/enums/user-roles.enums';
 
 @Resolver(() => GradeEntity)
+@UseGuards(Guard)
 export class GradesResolver {
-  constructor(private readonly gradesService: GradesService) {}
+  constructor(
+    private readonly gradesService: GradesService,
+    private readonly userService: UserService,
+  ) {}
+
+  private async assertCanRead(userId: number, studentId: number): Promise<void> {
+    const actor = await this.userService.assertRole(userId, [
+      UserRoles.Teacher,
+      UserRoles.Admin,
+      UserRoles.Parents,
+    ]);
+    if (actor.role === UserRoles.Parents) {
+      const children = await this.userService.getChildren(actor.id);
+      if (!children.some(child => child.id === studentId)) {
+        throw new ForbiddenException('Este estudiante no está a tu cargo');
+      }
+    }
+  }
 
   @Mutation(() => GradeEntity, { name: 'createGrade' })
   async createGrade(
+    @CurrentUser() current: { id: number },
     @Args('createGradeDto') createGradeDto: CreateGradeDto,
   ): Promise<GradeEntity> {
+    await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
     return await this.gradesService.createGrade(createGradeDto);
   }
 
   @Query(() => [GradeEntity], { name: 'gradesByStudentId' })
   async gradesByStudentId(
+    @CurrentUser() current: { id: number },
     @Args('studentId') studentId: number,
   ): Promise<GradeEntity[]> {
+    await this.assertCanRead(current.id, studentId);
     return await this.gradesService.findGradesByStudentId(studentId);
   }
 
-  // Nueva consulta para obtener las notas por subjectId
   @Query(() => [GradeEntity], { name: 'gradesBySubjectId' })
   async gradesBySubjectId(
+    @CurrentUser() current: { id: number },
     @Args('subjectId') subjectId: number,
   ): Promise<GradeEntity[]> {
+    await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
     return await this.gradesService.findGradesBySubjectId(subjectId);
   }
 
-  // Nueva mutación para actualizar una calificación
   @Mutation(() => GradeEntity, { name: 'updateGrade' })
   async updateGrade(
+    @CurrentUser() current: { id: number },
     @Args('id') id: number,
     @Args('updateGradeDto') updateGradeDto: UpdateGradeDto,
   ): Promise<GradeEntity> {
+    await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
     return await this.gradesService.updateGrade(id, updateGradeDto);
   }
 
-  // Mutación para eliminar una calificación
   @Mutation(() => Boolean, { name: 'deleteGrade' })
-  async deleteGrade(@Args('id') id: number): Promise<boolean> {
+  async deleteGrade(
+    @CurrentUser() current: { id: number },
+    @Args('id') id: number,
+  ): Promise<boolean> {
+    await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
     return await this.gradesService.deleteGrade(id);
   }
 
   @Query(() => GradeEntity, { name: 'findGradeById' })
-  async findGradeById(@Args('id') id: number): Promise<GradeEntity | undefined> {
-    return await this.gradesService.findGradeById(id); // Llamada al servicio
+  async findGradeById(
+    @CurrentUser() current: { id: number },
+    @Args('id') id: number,
+  ): Promise<GradeEntity | undefined> {
+    await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+    return await this.gradesService.findGradeById(id);
   }
 
   @Query(() => [GradeEntity], { name: 'getAllGrades' })
-  async getAllGrades(): Promise<GradeEntity[]> {
-    return await this.gradesService.getAllGrades(); // Llamada al servicio para obtener todas las calificaciones
+  async getAllGrades(@CurrentUser() current: { id: number }): Promise<GradeEntity[]> {
+    await this.userService.assertRole(current.id, [UserRoles.Teacher, UserRoles.Admin]);
+    return await this.gradesService.getAllGrades();
   }
 
-  // Nueva query para obtener notas de un alumno en una asignatura específica
   @Query(() => [GradeEntity], { name: 'gradesByStudentAndSubject' })
   async gradesByStudentAndSubject(
+    @CurrentUser() current: { id: number },
     @Args('studentId') studentId: number,
     @Args('subjectId') subjectId: number,
   ): Promise<GradeEntity[]> {
+    await this.assertCanRead(current.id, studentId);
     return await this.gradesService.findGradesByStudentAndSubject(studentId, subjectId);
   }
 
-
-  // Nueva query para obtener el promedio de un alumno en una asignatura específica
   @Query(() => Float, { name: 'averageGradeByStudentAndSubject' })
   async averageGradeByStudentAndSubject(
+    @CurrentUser() current: { id: number },
     @Args('studentId') studentId: number,
     @Args('subjectId') subjectId: number,
   ): Promise<number> {
+    await this.assertCanRead(current.id, studentId);
     return await this.gradesService.calculateAverageGradeForStudentInSubject(studentId, subjectId);
   }
 }
-

@@ -7,7 +7,7 @@ export class UpdateGradeDto extends PartialType(CreateGradeDto) {
 
     @Field(() => Float, { nullable: true })
     @IsNumber()
-    @Min(0)
+    @Min(1)
     @Max(7)
     grade?: number;
 

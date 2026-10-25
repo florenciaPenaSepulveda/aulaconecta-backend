@@ -8,6 +8,9 @@ import { SubjectResponse } from "./entities/subjectResponse";
 import { jwtConstants } from "src/auth/constant/jwt.constants";
 import * as jwt from 'jsonwebtoken';
 import { CourseEntity } from "src/course/entity/course.entity";
+import { AsistEntity } from "src/asist/entities/asist.entity";
+import { AttendanceRecordEntity } from "src/asist/entities/attendance-record.entity";
+import { GradeEntity } from "src/grades/entities/grade.entity";
 import { CreateSubjectAdminDto } from "./dto/createSubjectAdmin.dto";
 
 @Injectable()
@@ -119,6 +122,22 @@ export class SubjectService {
 
         await this.subjectRepository.save(subject);
         return subject;
+    }
+
+    async deleteSubjectById(id: number): Promise<boolean> {
+        const subject = await this.subjectRepository.findOne({ where: { id } });
+        if (!subject) {
+            throw new BadRequestException('La asignatura no existe');
+        }
+        await this.subjectRepository.manager.delete(AsistEntity, { idSubject: id });
+        await this.subjectRepository.manager.delete(AttendanceRecordEntity, { idSubject: id });
+        await this.subjectRepository.manager.delete(GradeEntity, { subjectId: id });
+        await this.subjectRepository.remove(subject);
+        return true;
+    }
+
+    async findById(id: number): Promise<SubjectEntity | null> {
+        return await this.subjectRepository.findOne({ where: { id }, relations: ['course'] });
     }
 
     async findAll(): Promise<SubjectEntity[]> {
