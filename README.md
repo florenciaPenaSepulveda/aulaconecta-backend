@@ -86,7 +86,7 @@ Los demás profesores y apoderados generados usan el formato `nombre.apellido@au
 | `JWT_SECRET` | Clave para firmar los tokens (en producción, al menos 32 caracteres) |
 | `NODE_ENV` | Con `production` se desactivan el Playground y la introspección de GraphQL, se exige una clave JWT larga y no se sincroniza el esquema de la base de datos |
 | `CORS_ORIGINS` | Orígenes del frontend autorizados, separados por coma (por defecto los de desarrollo local) |
-| `RATE_LIMIT` | Solicitudes por minuto y por IP (300 por defecto); el inicio de sesión, el registro y el cambio de contraseña admiten 10 |
+| `RATE_LIMIT` | Solicitudes por minuto y por IP (300 por defecto); el inicio de sesión, la recuperación, el registro y el cambio de contraseña admiten 30 |
 | `TRUST_PROXY` | Número de proxies de confianza delante de la API, para limitar por la IP real del cliente |
 | `MAIL_USER`, `MAIL_PASS` | Cuenta Gmail y contraseña de aplicación para enviar correos |
 

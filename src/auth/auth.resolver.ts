@@ -10,7 +10,7 @@ import { ChangePasswordDto } from "./dto/change-password";
 import { Guard } from "src/guard/guard";
 import { CurrentUser } from "src/guard/current-user.decorator";
 
-const LIMITE_AUTENTICACION = { default: { limit: 10, ttl: 60000 } };
+const LIMITE_AUTENTICACION = { default: { limit: 30, ttl: 60000 } };
 
 @Resolver()
 export class AuthResolver {

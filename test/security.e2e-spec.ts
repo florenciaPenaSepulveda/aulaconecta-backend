@@ -269,7 +269,7 @@ describe('Seguridad y permisos (e2e)', () => {
       process.env.PROBAR_LIMITES = '1';
       try {
         const respuestas = [];
-        for (let intento = 0; intento < 12; intento++) {
+        for (let intento = 0; intento < 32; intento++) {
           respuestas.push(await gql('mutation { login(email: "nadie@test.cl", password: "xxxxxxxx") { token } }'));
         }
         const mensajes = respuestas.map((res) => res.body.errors?.[0]?.message ?? '');
