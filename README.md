@@ -6,6 +6,16 @@ API GraphQL de **AulaConecta**, una plataforma de gestión escolar que conecta a
 
 Construida con NestJS, TypeORM y MySQL 8.
 
+## Inicio rápido
+
+```
+cd docker-crud && docker compose up -d && cd ..
+cp .env.example .env
+npm install && npm run build && npm run start:prod
+```
+
+API GraphQL en `http://localhost:3000/graphql`. Necesitas Node.js 24 y Docker. Pruebas: 96 con 98 % de cobertura (`npm test`). Detalle más abajo.
+
 ## Repositorios del proyecto
 
 | Repositorio | Descripción |
